@@ -81,8 +81,6 @@ function Calendar({
         day_range_middle:
           "aria-selected:bg-accent aria-selected:text-accent-foreground",
         day_hidden: "invisible",
-        day_booked_by_others: "bg-red-200 text-red-800 hover:bg-red-300",
-        day_booked_by_user: "bg-green-200 text-green-800 hover:bg-green-300",
         ...classNames,
       }}
       modifiers={{

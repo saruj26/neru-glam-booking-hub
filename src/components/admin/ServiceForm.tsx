@@ -84,10 +84,18 @@ export const ServiceForm: React.FC<ServiceFormProps> = ({ initialData, onSubmit,
   });
 
   const handleSubmit = (values: z.infer<typeof serviceFormSchema>) => {
-    onSubmit({
-      ...values,
-      id: initialData?.id || '', // ID will be replaced if it's a new service
-    });
+    // Ensure all required fields are present and create a complete ServiceData object
+    const serviceData: ServiceData = {
+      id: initialData?.id || '',
+      title: values.title,
+      description: values.description,
+      category: values.category,
+      price: values.price,
+      image: values.image,
+      active: values.active,
+    };
+    
+    onSubmit(serviceData);
   };
 
   return (
