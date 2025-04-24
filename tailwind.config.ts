@@ -66,7 +66,7 @@ export default {
 				neru: {
 					purple: "#8B5CF6",
 					pink: "#FFDEE2",
-					gold: "#D4AF37",
+					gold: "#D4A53F",
 					darkGray: "#403E43",
 					lightGray: "#F1F0FB",
 				}

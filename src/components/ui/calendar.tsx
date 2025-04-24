@@ -1,3 +1,4 @@
+
 import * as React from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { DayPicker } from "react-day-picker";
@@ -5,18 +6,49 @@ import { DayPicker } from "react-day-picker";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 
-export type CalendarProps = React.ComponentProps<typeof DayPicker>;
+export type CalendarProps = React.ComponentProps<typeof DayPicker> & {
+  bookedDates?: Date[];
+  userBookedDates?: Date[];
+};
 
 function Calendar({
   className,
   classNames,
   showOutsideDays = true,
+  bookedDates = [],
+  userBookedDates = [],
   ...props
 }: CalendarProps) {
+  // Function to determine if a date is booked by others
+  const isBookedByOthers = (date: Date) => {
+    return bookedDates.some(
+      (bookedDate) =>
+        bookedDate.getDate() === date.getDate() &&
+        bookedDate.getMonth() === date.getMonth() &&
+        bookedDate.getFullYear() === date.getFullYear()
+    );
+  };
+
+  // Function to determine if a date is booked by the current user
+  const isBookedByUser = (date: Date) => {
+    return userBookedDates.some(
+      (userDate) =>
+        userDate.getDate() === date.getDate() &&
+        userDate.getMonth() === date.getMonth() &&
+        userDate.getFullYear() === date.getFullYear()
+    );
+  };
+
+  const getDayClass = (date: Date) => {
+    if (isBookedByOthers(date)) return "booked-by-others";
+    if (isBookedByUser(date)) return "booked-by-user";
+    return "";
+  };
+
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
-      className={cn("p-3", className)}
+      className={cn("p-3 pointer-events-auto", className)}
       classNames={{
         months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
         month: "space-y-4",
@@ -49,7 +81,25 @@ function Calendar({
         day_range_middle:
           "aria-selected:bg-accent aria-selected:text-accent-foreground",
         day_hidden: "invisible",
+        day_booked_by_others: "bg-red-200 text-red-800 hover:bg-red-300",
+        day_booked_by_user: "bg-green-200 text-green-800 hover:bg-green-300",
         ...classNames,
+      }}
+      modifiers={{
+        "booked-by-others": (date) => isBookedByOthers(date),
+        "booked-by-user": (date) => isBookedByUser(date),
+      }}
+      modifiersStyles={{
+        "booked-by-others": { 
+          backgroundColor: "#ffcdd2", 
+          color: "#d32f2f", 
+          fontWeight: "bold" 
+        },
+        "booked-by-user": { 
+          backgroundColor: "#c8e6c9", 
+          color: "#2e7d32", 
+          fontWeight: "bold" 
+        },
       }}
       components={{
         IconLeft: ({ ..._props }) => <ChevronLeft className="h-4 w-4" />,
