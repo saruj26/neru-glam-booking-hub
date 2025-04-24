@@ -27,7 +27,7 @@ const servicesData = {
     id: 'birthday-premium',
     title: 'Premium Birthday Glam',
     description: 'Elevated makeup with shimmer and glow, perfect for evening parties.',
-    fullDescription: 'The Premium Birthday Glam offers a more dramatic and festive look that's perfect for evening celebrations. This service includes full coverage foundation, contouring, highlighting, dramatic eye makeup with shimmer or glitter options, false lashes, and a bold lip color of your choice. The result is a glamorous, photo-ready look that will make you stand out on your special day. This service takes approximately 60-75 minutes.',
+    fullDescription: 'The Premium Birthday Glam offers a more dramatic and festive look that\'s perfect for evening celebrations. This service includes full coverage foundation, contouring, highlighting, dramatic eye makeup with shimmer or glitter options, false lashes, and a bold lip color of your choice. The result is a glamorous, photo-ready look that will make you stand out on your special day. This service takes approximately 60-75 minutes.',
     image: 'https://images.unsplash.com/photo-1616683693504-3ea7e9ad6fec?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
     price: '$80',
     duration: '60-75 minutes',
