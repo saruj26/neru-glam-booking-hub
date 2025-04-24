@@ -1,4 +1,3 @@
-
 import { Link } from 'react-router-dom';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
@@ -26,8 +25,8 @@ const CategoryCard = ({ id, title, description, image, price }: CategoryCardProp
         <p className="text-gray-600 mb-4">{description}</p>
         <div className="flex items-center justify-between">
           <span className="text-neru-gold font-semibold">{price}</span>
-          <Button className="bg-neru-purple hover:bg-purple-600 text-white">
-            <Link to={`/services/${id}`}>View Details</Link>
+          <Button className="bg-neru-purple hover:bg-purple-600 text-white" asChild>
+            <Link to={`/service/${id}`}>View Details</Link>
           </Button>
         </div>
       </CardContent>
