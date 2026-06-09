@@ -10,6 +10,7 @@ import Services from "./pages/Services";
 import ServiceDetail from "./pages/ServiceDetail";
 import Booking from "./pages/Booking";
 import Contact from "./pages/Contact";
+import Gallery from "./pages/Gallery";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import NotFound from "./pages/NotFound";
@@ -35,6 +36,7 @@ const App = () => (
             <Route path="/service/:id" element={<ServiceDetail />} />
             <Route path="/booking" element={<Booking />} />
             <Route path="/wishlist" element={<Wishlist />} />
+            <Route path="/gallery" element={<Gallery />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />

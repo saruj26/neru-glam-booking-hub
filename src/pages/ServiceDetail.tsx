@@ -11,7 +11,7 @@ const ServiceDetail = () => {
     id: 'birthday-themed',
     title: 'Themed Birthday Makeup',
     description: 'Customized makeup to match your birthday theme or costume.',
-    fullDescription: 'Transform your look with our themed birthday makeup service. Our expert artists will create a unique makeup design that perfectly matches your party theme or costume. Whether you're going for a magical fairy princess look, a glamorous Hollywood star, or any other theme, we'll make your vision come to life. This service includes full face makeup with special attention to theme-specific details, the use of special effects products if needed, and a long-lasting setting spray to keep you looking perfect throughout your celebration.',
+    fullDescription: 'Transform your look with our themed birthday makeup service. Our expert artists will create a unique makeup design that perfectly matches your party theme or costume. Whether you are going for a magical fairy princess look, a glamorous Hollywood star, or any other theme, we will make your vision come to life. This service includes full face makeup with special attention to theme-specific details, the use of special effects products if needed, and a long-lasting setting spray to keep you looking perfect throughout your celebration.',
     image: 'https://images.unsplash.com/photo-1617220275046-90170ad2815f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
     price: 'From $100',
     duration: '60-90 minutes',
