@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -24,6 +24,7 @@ const benefits = [
 ];
 
 const Login = () => {
+  const navigate = useNavigate();
   const [showPwd,  setShowPwd]  = useState(false);
   const [loading,  setLoading]  = useState(false);
   const [remember, setRemember] = useState(false);
@@ -33,15 +34,38 @@ const Login = () => {
     defaultValues: { email: '', password: '' },
   });
 
-  /* onSubmit — logic UNCHANGED */
   function onSubmit(values: z.infer<typeof formSchema>) {
     setLoading(true);
     setTimeout(() => {
-      toast({
-        title: 'Login attempt',
-        description: "You've attempted to log in. This feature is not fully implemented yet.",
-      });
-      console.log(values);
+      try {
+        const customers: { email: string; password: string; name: string; phone: string; address: string; memberSince: string; level: string; points: number; pointsForNext: number; nextLevel: string }[] =
+          JSON.parse(localStorage.getItem('neru-customers') || '[]');
+        const found = customers.find(c => c.email === values.email && c.password === values.password);
+        if (found) {
+          const authData = {
+            name:          found.name,
+            email:         found.email,
+            phone:         found.phone         || '',
+            address:       found.address       || '',
+            memberSince:   found.memberSince   || 'Recently',
+            level:         found.level         || 'Silver',
+            points:        found.points        ?? 0,
+            pointsForNext: found.pointsForNext ?? 500,
+            nextLevel:     found.nextLevel     || 'Gold',
+          };
+          localStorage.setItem('neru-customer-auth', JSON.stringify(authData));
+          toast({ title: `Welcome back, ${found.name}!`, description: 'Redirecting to your dashboard…' });
+          navigate('/dashboard');
+        } else {
+          toast({
+            title: 'Invalid credentials',
+            description: 'Email or password is incorrect. Please try again.',
+            variant: 'destructive',
+          });
+        }
+      } catch {
+        toast({ title: 'Error', description: 'Something went wrong. Please try again.', variant: 'destructive' });
+      }
       setLoading(false);
     }, 900);
   }
@@ -208,7 +232,7 @@ const Login = () => {
                       </div>
                       <span className="text-sm text-gray-600">Remember me</span>
                     </label>
-                    <Link to="#" className="text-sm font-medium text-neru-purple hover:text-purple-700 transition-colors hover:underline">
+                    <Link to="/forgot-password" className="text-sm font-medium text-neru-purple hover:text-purple-700 transition-colors hover:underline">
                       Forgot password?
                     </Link>
                   </div>

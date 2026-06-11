@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -53,6 +53,7 @@ const joinReasons = [
 ];
 
 const Register = () => {
+  const navigate = useNavigate();
   const [showPwd,     setShowPwd]     = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading,     setLoading]     = useState(false);
@@ -66,15 +67,37 @@ const Register = () => {
   const watchedPwd = form.watch('password');
   const strength   = getStrength(watchedPwd);
 
-  /* onSubmit — logic UNCHANGED */
   function onSubmit(values: z.infer<typeof formSchema>) {
     setLoading(true);
     setTimeout(() => {
-      toast({
-        title: 'Registration attempt',
-        description: "You've attempted to register. This feature is not fully implemented yet.",
-      });
-      console.log(values);
+      try {
+        const customers: { email: string }[] = JSON.parse(localStorage.getItem('neru-customers') || '[]');
+        if (customers.find(c => c.email === values.email)) {
+          toast({
+            title: 'Email already registered',
+            description: 'An account with this email exists. Please sign in instead.',
+            variant: 'destructive',
+          });
+          setLoading(false);
+          return;
+        }
+        const memberSince = new Date().toLocaleString('en-IN', { month: 'long', year: 'numeric' });
+        const newCustomer = {
+          name: values.name, email: values.email, phone: values.phone,
+          address: values.address || '', password: values.password,
+          memberSince, level: 'Silver', points: 0, pointsForNext: 500, nextLevel: 'Gold',
+        };
+        customers.push(newCustomer);
+        localStorage.setItem('neru-customers', JSON.stringify(customers));
+
+        const { password: _p, ...authData } = newCustomer;
+        localStorage.setItem('neru-customer-auth', JSON.stringify(authData));
+
+        toast({ title: `Welcome to Neru Beauty, ${values.name}!`, description: 'Account created! Redirecting to your dashboard…' });
+        navigate('/dashboard');
+      } catch {
+        toast({ title: 'Error', description: 'Something went wrong. Please try again.', variant: 'destructive' });
+      }
       setLoading(false);
     }, 900);
   }
