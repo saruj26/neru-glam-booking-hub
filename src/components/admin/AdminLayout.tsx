@@ -12,6 +12,8 @@ import {
   Sparkles,
   Bell,
   ChevronDown,
+  Tag,
+  CreditCard,
 } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 
@@ -20,11 +22,13 @@ interface AdminLayoutProps {
 }
 
 const menuItems = [
-  { path: '/admin/dashboard', icon: BarChart3, label: 'Dashboard' },
-  { path: '/admin/services',  icon: Package,   label: 'Services'  },
-  { path: '/admin/bookings',  icon: Calendar,  label: 'Bookings'  },
-  { path: '/admin/reviews',   icon: MessageSquare, label: 'Reviews' },
-  { path: '/admin/settings',  icon: Settings,  label: 'Settings'  },
+  { path: '/admin/dashboard',        icon: BarChart3,     label: 'Dashboard'        },
+  { path: '/admin/services',         icon: Package,       label: 'Services'         },
+  { path: '/admin/bookings',         icon: Calendar,      label: 'Bookings'         },
+  { path: '/admin/offers',           icon: Tag,           label: 'Offers'           },
+  { path: '/admin/reviews',          icon: MessageSquare, label: 'Reviews'          },
+  { path: '/admin/payment-settings', icon: CreditCard,    label: 'Payment Settings' },
+  { path: '/admin/settings',         icon: Settings,      label: 'Settings'         },
 ];
 
 export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {

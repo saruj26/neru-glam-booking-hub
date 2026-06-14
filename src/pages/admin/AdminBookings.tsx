@@ -1,372 +1,412 @@
-
-import React, { useState, useEffect } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AdminLayout } from '@/components/admin/AdminLayout';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Search, Calendar, Eye, XCircle, CheckCircle } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
+import {
+  Search, Calendar, CreditCard, Banknote, CheckCircle,
+  XCircle, Clock, Eye, RefreshCw, Tag,
+} from 'lucide-react';
+import {
+  getBookings, upsertBooking, fmt, type StoredBooking,
+} from '@/lib/paymentUtils';
 
-// Mock booking data type
-type Booking = {
-  id: string;
-  customer: {
-    name: string;
-    email: string;
-    phone: string;
-  };
-  service: {
-    id: string;
-    name: string;
-  };
-  date: string;
-  time: string;
-  status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
-  payment: {
-    amount: string;
-    paid: boolean;
-  };
+/* ─── Types ─────────────────────────────────────────────────────────────── */
+type StatusKey = StoredBooking['status'];
+type FilterTab = 'all' | StatusKey;
+
+/* ─── Badge helpers ──────────────────────────────────────────────────────── */
+const STATUS_CFG: Record<StatusKey, { label: string; cls: string; dot: string }> = {
+  confirmed:       { label: 'Confirmed',    cls: 'bg-blue-50 text-blue-700',     dot: 'bg-blue-500'    },
+  partially_paid:  { label: 'Partial Paid', cls: 'bg-indigo-50 text-indigo-700', dot: 'bg-indigo-500'  },
+  pending_payment: { label: 'Pending Pay',  cls: 'bg-amber-50 text-amber-700',   dot: 'bg-amber-500'   },
+  completed:       { label: 'Completed',    cls: 'bg-emerald-50 text-emerald-700',dot:'bg-emerald-500'  },
+  cancelled:       { label: 'Cancelled',    cls: 'bg-red-50 text-red-600',        dot: 'bg-red-500'     },
 };
 
-const AdminBookings = () => {
+function StatusBadge({ status }: { status: StatusKey }) {
+  const cfg = STATUS_CFG[status] ?? STATUS_CFG.pending_payment;
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold ${cfg.cls}`}>
+      <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${cfg.dot}`} />
+      {cfg.label}
+    </span>
+  );
+}
+
+function PaymentBadge({ method, paid, remaining }: { method: 'online' | 'cash'; paid: number; remaining: number }) {
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center gap-1.5">
+        {method === 'online'
+          ? <CreditCard size={11} className="text-purple-500" />
+          : <Banknote size={11} className="text-emerald-600" />}
+        <span className="text-[11px] font-semibold text-gray-600">
+          {method === 'online' ? 'Online' : 'Cash'}
+        </span>
+      </div>
+      {paid > 0 && <p className="text-[10px] text-emerald-600 font-medium">Paid: {fmt(paid)}</p>}
+      {remaining > 0 && <p className="text-[10px] text-amber-600 font-medium">Due: {fmt(remaining)}</p>}
+    </div>
+  );
+}
+
+/* ─── Detail Modal ───────────────────────────────────────────────────────── */
+function DetailModal({ booking, onClose }: { booking: StoredBooking; onClose: () => void }) {
+  const p = booking.pricing;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-fade-in">
+        <div className="p-5 border-b border-gray-100" style={{ background: 'linear-gradient(135deg,#3B0764,#7C3AED)' }}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-amber-300 text-xs font-bold tracking-wider uppercase mb-0.5">Booking Details</p>
+              <p className="text-white font-extrabold text-lg font-mono">{booking.id}</p>
+            </div>
+            <StatusBadge status={booking.status} />
+          </div>
+        </div>
+
+        <div className="p-5 space-y-4 overflow-y-auto max-h-[65vh]">
+          {/* Customer */}
+          <div>
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Customer</p>
+            <div className="bg-gray-50 rounded-xl p-3 space-y-1 text-sm">
+              <p className="font-semibold text-gray-800">{booking.customer.name}</p>
+              <p className="text-gray-500">{booking.customer.email}</p>
+              <p className="text-gray-500">{booking.customer.phone}</p>
+            </div>
+          </div>
+
+          {/* Service */}
+          <div>
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Service</p>
+            <div className="bg-gray-50 rounded-xl p-3 text-sm">
+              <p className="font-semibold text-gray-800">{booking.service.name}</p>
+              <p className="text-gray-500 capitalize">{booking.service.category} · {booking.date} at {booking.time}</p>
+              {booking.specialRequests && (
+                <p className="text-gray-400 text-xs mt-1 italic">"{booking.specialRequests}"</p>
+              )}
+            </div>
+          </div>
+
+          {/* Pricing */}
+          <div>
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Pricing Breakdown</p>
+            <div className="bg-gray-50 rounded-xl p-3 space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-500">Original Price</span>
+                <span className={p.discountAmount > 0 ? 'line-through text-gray-400 text-xs' : 'font-semibold text-gray-800'}>
+                  {fmt(p.originalPrice)}
+                </span>
+              </div>
+              {p.discountAmount > 0 && (
+                <div className="flex justify-between text-emerald-600">
+                  <span className="flex items-center gap-1"><Tag size={10} /> Discount ({p.discountLabel})</span>
+                  <span className="font-semibold">- {fmt(p.discountAmount)}</span>
+                </div>
+              )}
+              <div className="flex justify-between font-bold border-t border-gray-200 pt-2">
+                <span className="text-gray-700">Total Payable</span>
+                <span style={{ color: '#7C3AED' }}>{fmt(p.finalPrice)}</span>
+              </div>
+              {booking.payment.method === 'online' && p.advancePercent > 0 && (
+                <>
+                  <div className="flex justify-between text-purple-700 text-xs">
+                    <span>Advance Paid ({p.advancePercent}%)</span>
+                    <span className="font-bold">{fmt(p.advanceAmount)}</span>
+                  </div>
+                  <div className="flex justify-between text-amber-700 text-xs">
+                    <span>Remaining (After Service)</span>
+                    <span className="font-bold">{fmt(p.remainingAmount)}</span>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Offer */}
+          {p.offer && (
+            <div>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Offer Applied</p>
+              <div className="rounded-xl p-3 text-sm" style={{ background: '#F5F3FF', border: '1px solid #EDE9FE' }}>
+                <p className="font-semibold text-purple-800">{p.offer.name}</p>
+                <p className="text-purple-600 text-xs mt-0.5">{p.discountLabel} applied</p>
+                {p.offer.code && <p className="text-purple-400 text-[10px] font-mono mt-0.5">Code: {p.offer.code}</p>}
+              </div>
+            </div>
+          )}
+
+          {/* Payment */}
+          <div>
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Payment</p>
+            <div className="bg-gray-50 rounded-xl p-3 space-y-1.5 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-500">Method</span>
+                <span className="font-semibold flex items-center gap-1">
+                  {booking.payment.method === 'online'
+                    ? <><CreditCard size={12} className="text-purple-500" /> Online</>
+                    : <><Banknote size={12} className="text-emerald-600" /> Cash</>}
+                </span>
+              </div>
+              {booking.payment.transactionId && (
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Transaction ID</span>
+                  <span className="font-mono text-xs text-gray-700">{booking.payment.transactionId}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="p-4 border-t border-gray-100">
+          <button onClick={onClose}
+            className="w-full h-10 rounded-xl bg-gray-100 text-gray-600 text-sm font-semibold hover:bg-gray-200 transition-colors">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Main Page ──────────────────────────────────────────────────────────── */
+export default function AdminBookings() {
   const navigate = useNavigate();
+  const [bookings,    setBookings]    = useState<StoredBooking[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [filterTab,   setFilterTab]   = useState<FilterTab>('all');
+  const [detail,      setDetail]      = useState<StoredBooking | null>(null);
 
   useEffect(() => {
-    // Check if admin is authenticated
-    const isAuthenticated = localStorage.getItem('neru-admin-auth') === 'true';
-    if (!isAuthenticated) {
-      navigate('/admin');
-      return;
-    }
-
-    // In a real app, you'd fetch this data from backend
-    setBookings([
-      {
-        id: 'BK001',
-        customer: {
-          name: 'Maya Johnson',
-          email: 'maya@example.com',
-          phone: '123-456-7890'
-        },
-        service: {
-          id: 'birthday-premium',
-          name: 'Premium Birthday Glam'
-        },
-        date: '2025-04-25',
-        time: '14:00',
-        status: 'confirmed',
-        payment: {
-          amount: '$80',
-          paid: true
-        }
-      },
-      {
-        id: 'BK002',
-        customer: {
-          name: 'Sarah Williams',
-          email: 'sarah@example.com',
-          phone: '234-567-8901'
-        },
-        service: {
-          id: 'wedding-traditional',
-          name: 'Traditional Bridal Makeup'
-        },
-        date: '2025-04-28',
-        time: '10:00',
-        status: 'pending',
-        payment: {
-          amount: '$200',
-          paid: false
-        }
-      },
-      {
-        id: 'BK003',
-        customer: {
-          name: 'Aisha Khan',
-          email: 'aisha@example.com',
-          phone: '345-678-9012'
-        },
-        service: {
-          id: 'festive-makeup',
-          name: 'Festive Makeup'
-        },
-        date: '2025-05-05',
-        time: '16:30',
-        status: 'confirmed',
-        payment: {
-          amount: '$70',
-          paid: true
-        }
-      },
-      {
-        id: 'BK004',
-        customer: {
-          name: 'Jennifer Lee',
-          email: 'jennifer@example.com',
-          phone: '456-789-0123'
-        },
-        service: {
-          id: 'birthday-basic',
-          name: 'Basic Birthday Glam'
-        },
-        date: '2025-05-10',
-        time: '11:00',
-        status: 'cancelled',
-        payment: {
-          amount: '$50',
-          paid: false
-        }
-      },
-      {
-        id: 'BK005',
-        customer: {
-          name: 'Rebecca Thomas',
-          email: 'rebecca@example.com',
-          phone: '567-890-1234'
-        },
-        service: {
-          id: 'photoshoot-makeup',
-          name: 'Photoshoot Makeup'
-        },
-        date: '2025-04-20',
-        time: '09:00',
-        status: 'completed',
-        payment: {
-          amount: '$120',
-          paid: true
-        }
-      }
-    ]);
+    if (!localStorage.getItem('neru-admin-auth')) navigate('/admin');
+    setBookings(getBookings());
   }, [navigate]);
 
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value);
+  const refresh = () => { setBookings(getBookings()); toast({ title: 'Refreshed' }); };
+
+  const updateStatus = (id: string, status: StatusKey) => {
+    const b = bookings.find(x => x.id === id);
+    if (!b) return;
+    const updated: StoredBooking = { ...b, status, payment: { ...b.payment, status } };
+    upsertBooking(updated);
+    setBookings(prev => prev.map(x => x.id === id ? updated : x));
+    toast({ title: `Status → ${STATUS_CFG[status].label}` });
   };
 
-  const filteredBookings = bookings.filter((booking) => {
-    // Filter by search query
-    const matchesSearch = 
-      booking.customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      booking.customer.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      booking.service.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      booking.id.toLowerCase().includes(searchQuery.toLowerCase());
-
-    // Filter by status
-    if (statusFilter !== 'all') {
-      return matchesSearch && booking.status === statusFilter;
+  const filtered = useMemo(() => {
+    let list = bookings;
+    if (filterTab !== 'all') list = list.filter(b => b.status === filterTab);
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(b =>
+        b.id.toLowerCase().includes(q) ||
+        b.customer.name.toLowerCase().includes(q) ||
+        b.customer.email.toLowerCase().includes(q) ||
+        b.service.name.toLowerCase().includes(q),
+      );
     }
-    
-    return matchesSearch;
-  });
+    return list;
+  }, [bookings, filterTab, searchQuery]);
 
-  const handleConfirmBooking = (id: string) => {
-    setBookings(bookings.map(booking => 
-      booking.id === id ? { ...booking, status: 'confirmed' } : booking
-    ));
-    toast({
-      title: "Booking confirmed",
-      description: "The booking has been confirmed"
-    });
-  };
+  const stats = useMemo(() => ({
+    total:    bookings.length,
+    pending:  bookings.filter(b => b.status === 'pending_payment').length,
+    active:   bookings.filter(b => ['confirmed', 'partially_paid'].includes(b.status)).length,
+    completed:bookings.filter(b => b.status === 'completed').length,
+    revenue:  bookings.filter(b => b.status !== 'cancelled').reduce((s, b) => s + b.pricing.finalPrice, 0),
+  }), [bookings]);
 
-  const handleCancelBooking = (id: string) => {
-    if (window.confirm("Are you sure you want to cancel this booking?")) {
-      setBookings(bookings.map(booking => 
-        booking.id === id ? { ...booking, status: 'cancelled' } : booking
-      ));
-      toast({
-        title: "Booking cancelled",
-        description: "The booking has been cancelled"
-      });
-    }
-  };
-
-  const handleCompleteBooking = (id: string) => {
-    setBookings(bookings.map(booking => 
-      booking.id === id ? { ...booking, status: 'completed' } : booking
-    ));
-    toast({
-      title: "Booking marked as completed",
-      description: "The booking has been marked as completed"
-    });
-  };
-
-  const getStatusBadgeClass = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return 'bg-orange-100 text-orange-800';
-      case 'confirmed':
-        return 'bg-blue-100 text-blue-800';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800';
-      case 'completed':
-        return 'bg-green-100 text-green-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
+  const TABS: { key: FilterTab; label: string }[] = [
+    { key: 'all',             label: `All (${stats.total})`        },
+    { key: 'pending_payment', label: `Pending (${stats.pending})`  },
+    { key: 'confirmed',       label: 'Confirmed'                   },
+    { key: 'partially_paid',  label: 'Partial Paid'                },
+    { key: 'completed',       label: `Done (${stats.completed})`   },
+    { key: 'cancelled',       label: 'Cancelled'                   },
+  ];
 
   return (
     <AdminLayout>
-      <div className="p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-neru-purple">Bookings Management</h1>
-          <Button className="bg-neru-gold hover:bg-amber-500 text-white">
-            <Calendar className="mr-2 h-4 w-4" /> Export Calendar
-          </Button>
-        </div>
-
-        {/* Search and Filter Bar */}
-        <div className="mb-6 flex flex-col md:flex-row md:items-center gap-4">
-          <div className="relative flex-grow">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <Input
-              placeholder="Search bookings..."
-              value={searchQuery}
-              onChange={handleSearchChange}
-              className="pl-10"
-            />
+      <div className="p-6 lg:p-8">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+          <div>
+            <div className="flex items-center gap-3 mb-1">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#7C3AED,#8B5CF6)' }}>
+                <Calendar size={18} className="text-white" />
+              </div>
+              <h1 className="text-2xl font-extrabold text-gray-900" style={{ fontFamily: "'Playfair Display',serif" }}>
+                Bookings
+              </h1>
+            </div>
+            <p className="text-gray-500 text-sm ml-12">
+              {stats.total} bookings · Total revenue: {fmt(stats.revenue)}
+            </p>
           </div>
-          <div className="w-full md:w-[200px]">
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Bookings</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="confirmed">Confirmed</SelectItem>
-                <SelectItem value="cancelled">Cancelled</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-              </SelectContent>
-            </Select>
+          <button onClick={refresh}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 text-sm font-medium transition-colors">
+            <RefreshCw size={14} /> Refresh
+          </button>
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+          {[
+            { label: 'Total',     value: stats.total,    color: '#7C3AED' },
+            { label: 'Pending',   value: stats.pending,  color: '#D97706' },
+            { label: 'Active',    value: stats.active,   color: '#2563EB' },
+            { label: 'Completed', value: stats.completed,color: '#059669' },
+          ].map(({ label, value, color }) => (
+            <div key={label} className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+              <p className="text-2xl font-extrabold" style={{ color }}>{value}</p>
+              <p className="text-xs text-gray-500 mt-0.5 font-medium">{label}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Search + Tabs */}
+        <div className="flex flex-col sm:flex-row gap-3 mb-5">
+          <div className="relative flex-shrink-0">
+            <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Search bookings…"
+              className="w-full sm:w-64 pl-9 pr-4 h-10 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100" />
+          </div>
+          <div className="flex gap-1.5 flex-wrap">
+            {TABS.map(({ key, label }) => (
+              <button key={key} onClick={() => setFilterTab(key)}
+                className="px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"
+                style={filterTab === key
+                  ? { background: 'linear-gradient(135deg,#7C3AED,#8B5CF6)', color: '#fff' }
+                  : { background: 'white', color: '#6B7280', border: '1px solid #E5E7EB' }}>
+                {label}
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* Bookings Table */}
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Booking ID</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Service</TableHead>
-                <TableHead>Date & Time</TableHead>
-                <TableHead>Payment</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredBookings.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-10 text-gray-500">
-                    No bookings found matching your criteria
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredBookings.map((booking) => (
-                  <TableRow key={booking.id}>
-                    <TableCell className="font-medium">{booking.id}</TableCell>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium">{booking.customer.name}</p>
-                        <p className="text-xs text-gray-500">{booking.customer.email}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell>{booking.service.name}</TableCell>
-                    <TableCell>{`${booking.date} at ${booking.time}`}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center">
-                        <span className="font-medium">{booking.payment.amount}</span>
-                        <span className={`ml-2 py-1 px-2 rounded-full text-xs ${
-                          booking.payment.paid 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-gray-100 text-gray-800'
-                        }`}>
-                          {booking.payment.paid ? 'Paid' : 'Unpaid'}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <span className={`py-1 px-2 rounded-full text-xs font-medium ${getStatusBadgeClass(booking.status)}`}>
-                        {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end space-x-2">
-                        <Button 
-                          variant="outline" 
-                          size="icon"
-                          title="View Details"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
+        {/* Table */}
+        {filtered.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
+            <Calendar size={36} className="text-gray-200 mx-auto mb-3" />
+            <p className="text-gray-400 text-sm">
+              {bookings.length === 0
+                ? 'No bookings yet. Customer bookings will appear here.'
+                : 'No bookings match your current filter.'}
+            </p>
+          </div>
+        ) : (
+          <>
+            {/* Desktop */}
+            <div className="hidden lg:block bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-50 bg-gray-50/60">
+                      {['Booking ID', 'Customer', 'Service', 'Date & Time', 'Pricing', 'Payment', 'Status', 'Actions'].map(h => (
+                        <th key={h} className="text-left px-4 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider whitespace-nowrap">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filtered.map((b, i) => (
+                      <tr key={b.id} className={`hover:bg-gray-50/50 transition-colors ${i < filtered.length - 1 ? 'border-b border-gray-50' : ''}`}>
+                        <td className="px-4 py-3.5">
+                          <p className="font-mono font-bold text-xs" style={{ color: '#7C3AED' }}>{b.id}</p>
+                          <p className="text-gray-400 text-[10px] mt-0.5">{new Date(b.createdAt).toLocaleDateString('en-IN')}</p>
+                        </td>
+                        <td className="px-4 py-3.5">
+                          <p className="font-semibold text-gray-800 text-xs">{b.customer.name}</p>
+                          <p className="text-gray-400 text-[10px]">{b.customer.email}</p>
+                        </td>
+                        <td className="px-4 py-3.5">
+                          <p className="font-semibold text-gray-800 text-xs">{b.service.name}</p>
+                          <p className="text-gray-400 text-[10px] capitalize">{b.service.category}</p>
+                        </td>
+                        <td className="px-4 py-3.5 whitespace-nowrap">
+                          <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                            <Calendar size={10} style={{ color: '#7C3AED' }} />{b.date}
+                          </div>
+                          <div className="flex items-center gap-1.5 text-xs text-gray-400 mt-0.5">
+                            <Clock size={10} />{b.time}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3.5">
+                          {b.pricing.discountAmount > 0 && (
+                            <p className="line-through text-gray-400 text-[10px]">{fmt(b.pricing.originalPrice)}</p>
+                          )}
+                          <p className="font-bold text-gray-800 text-xs">{fmt(b.pricing.finalPrice)}</p>
+                          {b.pricing.offer && (
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-purple-50 text-purple-700 text-[9px] font-bold mt-0.5">
+                              <Tag size={8} />{b.pricing.discountLabel}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3.5">
+                          <PaymentBadge method={b.payment.method} paid={b.payment.paidAmount} remaining={b.payment.remainingAmount} />
+                        </td>
+                        <td className="px-4 py-3.5"><StatusBadge status={b.status} /></td>
+                        <td className="px-4 py-3.5">
+                          <div className="flex items-center gap-1">
+                            <button onClick={() => setDetail(b)} title="View" className="p-1.5 rounded-lg text-gray-400 hover:text-purple-600 hover:bg-purple-50 transition-all"><Eye size={13} /></button>
+                            {b.status === 'pending_payment' && (
+                              <button onClick={() => updateStatus(b.id, 'confirmed')} title="Confirm" className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-all"><CheckCircle size={13} /></button>
+                            )}
+                            {['confirmed', 'partially_paid'].includes(b.status) && (
+                              <button onClick={() => updateStatus(b.id, 'completed')} title="Complete" className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 transition-all"><CheckCircle size={13} /></button>
+                            )}
+                            {!['completed', 'cancelled'].includes(b.status) && (
+                              <button onClick={() => updateStatus(b.id, 'cancelled')} title="Cancel" className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-all"><XCircle size={13} /></button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
 
-                        {booking.status === 'pending' && (
-                          <Button 
-                            variant="outline" 
-                            size="icon"
-                            className="text-blue-600 border-blue-200 hover:bg-blue-50"
-                            title="Confirm Booking"
-                            onClick={() => handleConfirmBooking(booking.id)}
-                          >
-                            <CheckCircle className="h-4 w-4" />
-                          </Button>
-                        )}
-
-                        {(booking.status === 'confirmed' || booking.status === 'pending') && (
-                          <Button 
-                            variant="outline" 
-                            size="icon"
-                            className="text-red-500 border-red-200 hover:bg-red-50"
-                            title="Cancel Booking"
-                            onClick={() => handleCancelBooking(booking.id)}
-                          >
-                            <XCircle className="h-4 w-4" />
-                          </Button>
-                        )}
-
-                        {booking.status === 'confirmed' && (
-                          <Button 
-                            variant="outline" 
-                            size="icon"
-                            className="text-green-600 border-green-200 hover:bg-green-50"
-                            title="Mark as Completed"
-                            onClick={() => handleCompleteBooking(booking.id)}
-                          >
-                            <CheckCircle className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
+            {/* Mobile cards */}
+            <div className="lg:hidden space-y-3">
+              {filtered.map(b => (
+                <div key={b.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <p className="font-mono font-bold text-xs" style={{ color: '#7C3AED' }}>{b.id}</p>
+                      <p className="font-semibold text-gray-800 text-sm">{b.customer.name}</p>
+                      <p className="text-gray-500 text-xs">{b.service.name}</p>
+                    </div>
+                    <StatusBadge status={b.status} />
+                  </div>
+                  <div className="flex justify-between text-xs text-gray-500 mb-3">
+                    <span>{b.date} · {b.time}</span>
+                    <span className="font-bold text-gray-800">{fmt(b.pricing.finalPrice)}</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => setDetail(b)} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold bg-purple-50 text-purple-700">
+                      <Eye size={12} /> Details
+                    </button>
+                    {['confirmed', 'partially_paid'].includes(b.status) && (
+                      <button onClick={() => updateStatus(b.id, 'completed')} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-700">
+                        <CheckCircle size={12} /> Complete
+                      </button>
+                    )}
+                    {!['completed', 'cancelled'].includes(b.status) && (
+                      <button onClick={() => updateStatus(b.id, 'cancelled')} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold bg-red-50 text-red-600">
+                        <XCircle size={12} /> Cancel
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </div>
+
+      {detail && <DetailModal booking={detail} onClose={() => setDetail(null)} />}
     </AdminLayout>
   );
-};
-
-export default AdminBookings;
+}
