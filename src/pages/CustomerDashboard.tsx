@@ -6,7 +6,7 @@ import {
   User, LogOut, Clock, CheckCircle, ArrowRight,
   Search, Star, Gift, Menu, X, Phone, Mail, MapPin,
   Edit, Key, Check, Crown, MessageSquare, ChevronRight,
-  TrendingUp, CalendarCheck, Home, Settings,
+  TrendingUp, CalendarCheck, Home, Settings, Sun, Moon,
 } from 'lucide-react';
 
 /* ─── Types ──────────────────────────────────────────────────────── */
@@ -203,6 +203,7 @@ const CustomerDashboard = () => {
   const [scrolled,        setScrolled]         = useState(false);
   const [showNotifPanel,  setShowNotifPanel]   = useState(false);
   const [showProfileMenu, setShowProfileMenu]  = useState(false);
+  const [isDark,          setIsDark]           = useState(() => localStorage.getItem('neru-theme') === 'dark');
 
   /* ── Bookings state ── */
   const [bSearch, setBSearch] = useState('');
@@ -231,6 +232,11 @@ const CustomerDashboard = () => {
     el.addEventListener('scroll', onScroll, { passive: true });
     return () => el.removeEventListener('scroll', onScroll);
   }, []);
+
+  /* ── Dark mode persistence ── */
+  useEffect(() => {
+    localStorage.setItem('neru-theme', isDark ? 'dark' : 'light');
+  }, [isDark]);
 
   /* ── Desktop click-outside ── */
   useEffect(() => {
@@ -390,14 +396,14 @@ const CustomerDashboard = () => {
           { label: 'Completed Services', value: completedCount,        sub: 'Successfully done',   icon: CheckCircle,   grad: 'linear-gradient(135deg,#065F46,#059669)' },
           { label: 'Active Offers',      value: OFFERS.length,         sub: 'Claim before expiry', icon: Gift,          grad: 'linear-gradient(135deg,#BE185D,#EC4899)' },
         ].map(({ label, value, sub, icon: Icon, grad }) => (
-          <div key={label} className="rounded-2xl p-5 text-white shadow-lg hover:-translate-y-0.5 hover:shadow-xl transition-all duration-200" style={{ background: grad }}>
-            <div className="flex items-start justify-between mb-3">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-white/20"><Icon size={18} /></div>
-              <TrendingUp size={14} className="opacity-60 mt-1" />
+          <div key={label} className="rounded-2xl p-3.5 text-white shadow-lg hover:-translate-y-0.5 hover:shadow-xl transition-all duration-200" style={{ background: grad }}>
+            <div className="flex items-start justify-between mb-2">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-white/20"><Icon size={15} /></div>
+              <TrendingUp size={12} className="opacity-60" />
             </div>
-            <p className="text-2xl font-extrabold">{value}</p>
+            <p className="text-xl font-extrabold">{value}</p>
             <p className="text-xs font-semibold opacity-90 mt-0.5">{label}</p>
-            <p className="text-[10px] opacity-60 mt-0.5">{sub}</p>
+            <p className="text-[10px] opacity-60">{sub}</p>
           </div>
         ))}
       </div>
@@ -647,7 +653,7 @@ const CustomerDashboard = () => {
         <div className="grid sm:grid-cols-3 gap-4">
           {levels.map(lv => (
             <div key={lv.name} className={`rounded-2xl p-5 border-2 transition-all ${lv.active ? 'shadow-lg' : 'border-gray-100'}`}
-              style={{ borderColor: lv.active ? lv.color : undefined, background: lv.active ? `${lv.color}0A` : 'white' }}>
+              style={{ borderColor: lv.active ? lv.color : undefined, background: lv.active ? `${lv.color}0A` : (isDark ? '#1a1a2e' : 'white') }}>
               <div className="flex items-center gap-2 mb-3">
                 <Crown size={16} style={{ color: lv.color }} />
                 <span className="font-bold text-sm" style={{ color: lv.color }}>{lv.name}</span>
@@ -677,7 +683,7 @@ const CustomerDashboard = () => {
       <div className="grid sm:grid-cols-2 gap-4">
         {RECOMMENDED.map(r => (
           <div key={r.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200 overflow-hidden group">
-            <div className="h-32 flex items-center justify-center relative overflow-hidden" style={{ background: 'linear-gradient(135deg,#F3E8FF,#FDF4FF)' }}>
+            <div className="h-32 flex items-center justify-center relative overflow-hidden" style={{ background: isDark ? 'linear-gradient(135deg,#1e1040,#2a1560)' : 'linear-gradient(135deg,#F3E8FF,#FDF4FF)' }}>
               <Sparkles size={40} className="text-neru-purple/20 group-hover:scale-110 transition-transform duration-300" />
               {r.badge && <span className="absolute top-3 right-3 text-[10px] font-bold px-2 py-0.5 rounded-full text-white" style={{ background: 'linear-gradient(135deg,#7C3AED,#8B5CF6)' }}>{r.badge}</span>}
             </div>
@@ -871,7 +877,11 @@ const CustomerDashboard = () => {
      LAYOUT
   ══════════════════════════════════════════════════════════════════ */
   return (
-    <div className="flex h-screen overflow-hidden" style={{ background: '#F8F5FF', fontFamily: 'Inter, sans-serif' }}>
+    <div
+      data-theme={isDark ? 'dark' : 'light'}
+      className="flex h-screen overflow-hidden"
+      style={{ background: isDark ? '#0f0f1a' : '#F8F5FF', fontFamily: 'Inter, sans-serif' }}
+    >
 
       {/* ── Desktop Sidebar ────────────────────────────────────────── */}
       <aside className="hidden lg:flex flex-col w-64 flex-shrink-0 h-full" style={{ background: SIDEBAR_BG }}>
@@ -909,7 +919,9 @@ const CustomerDashboard = () => {
         <header
           className={`lg:hidden flex-shrink-0 z-20 transition-all duration-300 ${scrolled ? 'shadow-md' : 'shadow-sm'}`}
           style={{
-            background:           scrolled ? 'rgba(255,255,255,0.97)' : 'rgba(255,255,255,0.90)',
+            background:           isDark
+              ? (scrolled ? 'rgba(15,15,26,0.98)' : 'rgba(15,15,26,0.92)')
+              : (scrolled ? 'rgba(255,255,255,0.97)' : 'rgba(255,255,255,0.90)'),
             backdropFilter:       'blur(20px)',
             WebkitBackdropFilter: 'blur(20px)',
           }}
@@ -938,6 +950,16 @@ const CustomerDashboard = () => {
                 {unread > 0 && (
                   <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-pink-500 text-white text-[9px] font-bold flex items-center justify-center">{unread}</span>
                 )}
+              </button>
+
+              {/* Dark mode toggle */}
+              <button
+                onClick={() => setIsDark(d => !d)}
+                className="w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 transition-colors"
+                style={{ color: isDark ? '#FCD34D' : '#6B7280', background: isDark ? 'rgba(253,211,77,0.1)' : undefined }}
+                title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              >
+                {isDark ? <Sun size={16} /> : <Moon size={16} />}
               </button>
 
               {/* Hamburger (drawer access for full nav) */}
@@ -1003,7 +1025,13 @@ const CustomerDashboard = () => {
         {/* ════════════════════════════════════════════════════════════
             DESKTOP TOP BAR (hidden on mobile)
         ════════════════════════════════════════════════════════════ */}
-        <header className="hidden lg:flex flex-shrink-0 items-center gap-3 px-6 h-16 bg-white/80 backdrop-blur-sm border-b border-gray-100 shadow-sm">
+        <header
+          className="hidden lg:flex flex-shrink-0 items-center gap-3 px-6 h-16 backdrop-blur-sm border-b shadow-sm"
+          style={{
+            background:   isDark ? 'rgba(15,15,26,0.95)' : 'rgba(255,255,255,0.85)',
+            borderColor:  isDark ? '#2d2d45' : '#f3f4f6',
+          }}
+        >
           <div className="flex-1 min-w-0">
             <h1 className="font-bold text-neru-darkGray text-base truncate">
               {NAV.find(n => n.id === section)?.label ?? 'Overview'}
@@ -1011,6 +1039,16 @@ const CustomerDashboard = () => {
             <p className="text-gray-400 text-[10px]">Neru Beauty · Customer Portal</p>
           </div>
           <div className="flex items-center gap-2">
+            {/* Dark mode toggle */}
+            <button
+              onClick={() => setIsDark(d => !d)}
+              className="w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 transition-all duration-200"
+              style={{ color: isDark ? '#FCD34D' : '#6B7280', background: isDark ? 'rgba(253,211,77,0.1)' : undefined }}
+              title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            >
+              {isDark ? <Sun size={16} /> : <Moon size={16} />}
+            </button>
+
             {/* Desktop notification */}
             <div className="relative" ref={desktopNotifRef}>
               <button
@@ -1051,7 +1089,7 @@ const CustomerDashboard = () => {
 
         {/* ── Scrollable content ──────────────────────────────────── */}
         <main ref={mainRef} className="flex-1 overflow-y-auto">
-          <div className="max-w-5xl mx-auto px-4 lg:px-6 py-6 pb-28 lg:pb-6">
+          <div className="px-4 lg:px-6 py-6 pb-28 lg:pb-6">
             <div className="animate-fade-in">
               {renderSection()}
             </div>
@@ -1061,7 +1099,15 @@ const CustomerDashboard = () => {
         {/* ════════════════════════════════════════════════════════════
             BOTTOM NAVIGATION (mobile only)
         ════════════════════════════════════════════════════════════ */}
-        <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-20 bg-white/95 border-t border-gray-100 shadow-lg" style={{ backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' }}>
+        <nav
+          className="lg:hidden fixed bottom-0 left-0 right-0 z-20 border-t shadow-lg"
+          style={{
+            background:   isDark ? 'rgba(15,15,26,0.97)' : 'rgba(255,255,255,0.97)',
+            borderColor:  isDark ? '#2d2d45' : '#f3f4f6',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+          }}
+        >
           <div className="flex items-stretch">
             {([
               { id: 'overview',  label: 'Home',     icon: Home     },
@@ -1085,10 +1131,10 @@ const CustomerDashboard = () => {
                   )}
                   <Icon
                     size={19}
-                    style={isActive ? { color: '#7C3AED' } : { color: '#9CA3AF' }}
+                    style={isActive ? { color: '#7C3AED' } : { color: isDark ? '#6B7280' : '#9CA3AF' }}
                     strokeWidth={isActive ? 2.2 : 1.8}
                   />
-                  <span className={`text-[10px] font-semibold leading-none ${isActive ? 'text-neru-purple' : 'text-gray-400'}`}>{label}</span>
+                  <span className={`text-[10px] font-semibold leading-none ${isActive ? 'text-neru-purple' : isDark ? 'text-gray-500' : 'text-gray-400'}`}>{label}</span>
                 </button>
               );
             })}
