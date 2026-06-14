@@ -80,71 +80,144 @@ const Login = () => {
           {/* ── LEFT PANEL ──────────────────────────────────────── */}
           <div
             className="hidden lg:flex lg:w-[45%] flex-col justify-between p-12 relative overflow-hidden"
-            style={{ background: 'linear-gradient(150deg,#3B0764 0%,#6D28D9 40%,#8B5CF6 75%,#B45309 100%)' }}
+            style={{ background: 'linear-gradient(160deg,#1e0940 0%,#3B0764 25%,#5B21B6 55%,#7C3AED 80%,#9333EA 100%)' }}
           >
-            {/* decorative blobs */}
-            <div className="absolute -top-28 -left-28 w-96 h-96 rounded-full opacity-15" style={{ background: 'radial-gradient(circle,#FCD34D,transparent)' }} />
-            <div className="absolute -bottom-36 -right-20 w-[30rem] h-[30rem] rounded-full opacity-10" style={{ background: 'radial-gradient(circle,#F9A8D4,transparent)' }} />
+            {/* layered decorative elements */}
+            <div className="absolute -top-32 -left-32 w-[28rem] h-[28rem] rounded-full opacity-20" style={{ background: 'radial-gradient(circle,#FCD34D,transparent 70%)' }} />
+            <div className="absolute -bottom-40 -right-24 w-[32rem] h-[32rem] rounded-full opacity-12" style={{ background: 'radial-gradient(circle,#F9A8D4,transparent 65%)' }} />
+            <div className="absolute top-1/2 -left-20 w-72 h-72 rounded-full opacity-8" style={{ background: 'radial-gradient(circle,#A78BFA,transparent 70%)' }} />
 
-            {/* hero image */}
-            <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=900&q=80')] bg-cover bg-center opacity-[0.12]" />
+            {/* geometric accent lines */}
+            <div className="absolute top-0 right-0 w-px h-full opacity-10" style={{ background: 'linear-gradient(180deg,transparent,#FCD34D,transparent)' }} />
+            <div className="absolute top-0 left-0 right-0 h-px opacity-20" style={{ background: 'linear-gradient(90deg,transparent,rgba(212,165,63,0.8),transparent)' }} />
 
-            {/* logo */}
-            <div className="relative z-10 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(212,165,63,0.25)', border: '1.5px solid rgba(212,165,63,0.5)' }}>
-                <Sparkles size={18} className="text-amber-300" />
+            {/* hero image overlay */}
+            <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=900&q=80')] bg-cover bg-center opacity-[0.08]" />
+
+            {/* ── Brand Header ── */}
+            <div className="relative z-10 space-y-4">
+              <div className="flex items-center gap-4">
+                {/* Logo mark */}
+                <div className="relative flex-shrink-0">
+                  <div
+                    className="w-13 h-13 w-[52px] h-[52px] rounded-2xl flex items-center justify-center"
+                    style={{
+                      background: 'linear-gradient(135deg,rgba(212,165,63,0.35),rgba(212,165,63,0.12))',
+                      border: '1.5px solid rgba(212,165,63,0.65)',
+                      boxShadow: '0 0 24px rgba(212,165,63,0.25)',
+                    }}
+                  >
+                    <Sparkles size={22} className="text-amber-300" />
+                  </div>
+                  {/* live dot */}
+                  <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-emerald-400 border-2 border-purple-900 animate-pulse" />
+                </div>
+
+                {/* Brand name + badge */}
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <p
+                      className="text-white font-extrabold text-xl tracking-tight leading-none"
+                      style={{ fontFamily: "'Playfair Display',serif", textShadow: '0 1px 12px rgba(0,0,0,0.4)' }}
+                    >
+                      Neru Beauty
+                    </p>
+                    {/* Premium badge */}
+                    <span
+                      className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-extrabold tracking-[0.15em] uppercase text-amber-900 flex-shrink-0"
+                      style={{ background: 'linear-gradient(135deg,#FCD34D,#F59E0B)', boxShadow: '0 2px 8px rgba(245,158,11,0.4)' }}
+                    >
+                      ✦ PREMIUM
+                    </span>
+                  </div>
+                  <p className="text-white/40 text-[10px] tracking-[0.28em] uppercase mt-1.5">Luxury Beauty Studio · Est. 2019</p>
+                </div>
               </div>
-              <div className="leading-none">
-                <p className="text-white font-bold text-lg" style={{ fontFamily: "'Playfair Display',serif" }}>Neru Beauty</p>
-                <p className="text-white/40 text-[10px] tracking-[0.2em] uppercase mt-0.5">Premium Salon</p>
-              </div>
+
+              {/* gold separator */}
+              <div className="h-px" style={{ background: 'linear-gradient(90deg,rgba(212,165,63,0.7),rgba(212,165,63,0.15),transparent)' }} />
             </div>
 
-            {/* centre content */}
-            <div className="relative z-10 space-y-8">
+            {/* ── Centre Content ── */}
+            <div className="relative z-10 space-y-7">
               <div>
-                <p className="text-amber-300 text-xs font-bold tracking-[0.2em] uppercase mb-4">Welcome Back</p>
+                {/* Eyebrow label */}
+                <div className="flex items-center gap-2 mb-5">
+                  <div className="h-px w-8" style={{ background: 'linear-gradient(90deg,#FCD34D,transparent)' }} />
+                  <p className="text-amber-300 text-[10px] font-bold tracking-[0.28em] uppercase">Welcome Back</p>
+                </div>
+
                 <h2
-                  className="text-4xl font-extrabold text-white leading-tight"
-                  style={{ fontFamily: "'Playfair Display',serif" }}
+                  className="text-[2.4rem] font-extrabold text-white leading-[1.15]"
+                  style={{ fontFamily: "'Playfair Display',serif", textShadow: '0 2px 20px rgba(0,0,0,0.3)' }}
                 >
-                  Enhancing Beauty,<br />
-                  <span className="text-transparent bg-clip-text" style={{ backgroundImage: 'linear-gradient(to right,#FCD34D,#F59E0B)' }}>
+                  Enhancing Beauty,
+                  <br />
+                  <span
+                    className="text-transparent bg-clip-text"
+                    style={{ backgroundImage: 'linear-gradient(100deg,#FCD34D 0%,#F59E0B 50%,#FBBF24 100%)' }}
+                  >
                     Creating Confidence
                   </span>
                 </h2>
-                <p className="text-purple-200 mt-4 text-sm leading-relaxed max-w-xs">
+
+                <p className="text-purple-200/80 mt-4 text-sm leading-relaxed max-w-[300px]">
                   Your beauty journey continues here. Sign in to access your appointments, exclusive offers, and personalised beauty tips.
                 </p>
               </div>
 
-              {/* benefits */}
+              {/* benefits — numbered style */}
               <ul className="space-y-3">
-                {benefits.map(({ icon: Icon, text }) => (
-                  <li key={text} className="flex items-center gap-3">
-                    <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(212,165,63,0.2)', border: '1px solid rgba(212,165,63,0.35)' }}>
-                      <Icon size={13} className="text-amber-300" />
+                {benefits.map(({ icon: Icon, text }, i) => (
+                  <li key={text} className="flex items-center gap-3.5 group">
+                    <div
+                      className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-200"
+                      style={{
+                        background: 'rgba(212,165,63,0.15)',
+                        border: '1px solid rgba(212,165,63,0.4)',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                      }}
+                    >
+                      <Icon size={14} className="text-amber-300" />
                     </div>
-                    <span className="text-purple-100 text-sm">{text}</span>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-amber-400/50 text-[10px] font-bold flex-shrink-0">0{i + 1}</span>
+                      <span className="text-purple-100 text-sm">{text}</span>
+                    </div>
                   </li>
                 ))}
               </ul>
 
               {/* divider + quote */}
-              <div className="pt-4 border-t border-white/15">
-                <p className="text-purple-200/70 text-xs italic leading-relaxed">
-                  "We don't just do makeup — we build confidence, one brushstroke at a time."
-                </p>
-                <p className="text-amber-300/70 text-[10px] mt-2">— Neru Priya, Founder</p>
+              <div className="pt-5 border-t border-white/10 space-y-2">
+                <div className="flex gap-2">
+                  <span className="text-amber-400 text-2xl leading-none mt-[-4px] flex-shrink-0">"</span>
+                  <p className="text-purple-200/65 text-xs italic leading-relaxed">
+                    We don't just do makeup — we build confidence, one brushstroke at a time.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 pl-6">
+                  <div className="h-px w-6 bg-amber-400/40" />
+                  <p className="text-amber-300/65 text-[10px] font-semibold tracking-wide">Neru Priya, Founder</p>
+                </div>
               </div>
             </div>
 
-            {/* stats footer */}
-            <div className="relative z-10 grid grid-cols-3 gap-3">
-              {[['500+','Clients'],['4.9★','Rating'],['5 Yrs','Experience']].map(([val,lbl]) => (
-                <div key={lbl} className="text-center p-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.08)' }}>
-                  <p className="text-amber-300 font-bold text-lg leading-none">{val}</p>
-                  <p className="text-purple-200/60 text-[10px] mt-1">{lbl}</p>
+            {/* ── Stats Footer ── */}
+            <div className="relative z-10 grid grid-cols-3 gap-2.5">
+              {[
+                { val: '500+', lbl: 'Happy Clients',  icon: '👩‍🦰' },
+                { val: '4.9★', lbl: 'Avg Rating',      icon: '⭐' },
+                { val: '5 Yrs', lbl: 'Experience',     icon: '🏆' },
+              ].map(({ val, lbl, icon }) => (
+                <div
+                  key={lbl}
+                  className="text-center p-3 rounded-2xl relative overflow-hidden"
+                  style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)' }}
+                >
+                  <p className="text-sm mb-1">{icon}</p>
+                  <p className="text-amber-300 font-extrabold text-base leading-none">{val}</p>
+                  <p className="text-purple-200/50 text-[9px] mt-1 font-medium tracking-wide">{lbl}</p>
                 </div>
               ))}
             </div>
