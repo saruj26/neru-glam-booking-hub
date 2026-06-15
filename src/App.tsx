@@ -24,6 +24,7 @@ import AdminBookings from "./pages/admin/AdminBookings";
 import AdminReviews from "./pages/admin/AdminReviews";
 import AdminPaymentSettings from "./pages/admin/AdminPaymentSettings";
 import AdminOffers from "./pages/admin/AdminOffers";
+import AdminSettings from "./pages/admin/AdminSettings";
 
 const queryClient = new QueryClient();
 
@@ -53,6 +54,7 @@ const App = () => (
             <Route path="/admin/reviews" element={<AdminReviews />} />
             <Route path="/admin/offers" element={<AdminOffers />} />
             <Route path="/admin/payment-settings" element={<AdminPaymentSettings />} />
+            <Route path="/admin/settings" element={<AdminSettings />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
