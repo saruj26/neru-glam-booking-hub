@@ -377,7 +377,7 @@ export default function AdminPaymentSettings() {
     <AdminLayout>
       {/* ── Hero banner ── */}
       <div
-        className="px-6 lg:px-8 py-8"
+        className="px-5 lg:px-7 py-6"
         style={{ background: 'linear-gradient(135deg,#7B0D1E 0%,#9B1B30 50%,#A83222 100%)' }}
       >
         <div className="max-w-5xl mx-auto">
@@ -449,7 +449,7 @@ export default function AdminPaymentSettings() {
       </div>
 
       {/* ── Body ── */}
-      <div className="p-6 lg:p-8 max-w-5xl mx-auto">
+      <div className="p-4 lg:p-5 max-w-5xl mx-auto">
         <div className="grid lg:grid-cols-[1fr_300px] gap-6">
 
           {/* ── Left column ── */}

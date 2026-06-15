@@ -813,7 +813,7 @@ export default function AdminSettings() {
   return (
     <AdminLayout>
       {/* ── Hero ── */}
-      <div className="px-6 lg:px-8 py-7" style={{ background: 'linear-gradient(135deg,#7B0D1E 0%,#9B1B30 55%,#A83222 100%)' }}>
+      <div className="px-5 lg:px-7 py-6" style={{ background: 'linear-gradient(135deg,#7B0D1E 0%,#9B1B30 55%,#A83222 100%)' }}>
         <div className="max-w-6xl mx-auto flex items-center gap-4">
           <div className="w-13 h-13 rounded-2xl flex items-center justify-center flex-shrink-0 w-14 h-14"
             style={{ background: 'rgba(255,255,255,0.15)', border: '1.5px solid rgba(255,255,255,0.25)' }}>
@@ -829,7 +829,7 @@ export default function AdminSettings() {
       </div>
 
       {/* ── Body ── */}
-      <div className="max-w-6xl mx-auto p-4 lg:p-8">
+      <div className="max-w-6xl mx-auto p-4 lg:p-5">
         {/* Mobile category picker */}
         <div className="lg:hidden mb-4">
           <button onClick={() => setMobileOpen(o => !o)}
