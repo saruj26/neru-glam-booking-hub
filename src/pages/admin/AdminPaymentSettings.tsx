@@ -380,7 +380,7 @@ export default function AdminPaymentSettings() {
         className="px-5 lg:px-7 py-6"
         style={{ background: 'linear-gradient(135deg,#7B0D1E 0%,#9B1B30 50%,#A83222 100%)' }}
       >
-        <div className="max-w-5xl mx-auto">
+        <div className="w-full">
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-4">
               <div
@@ -449,7 +449,7 @@ export default function AdminPaymentSettings() {
       </div>
 
       {/* ── Body ── */}
-      <div className="p-4 lg:p-5 max-w-5xl mx-auto">
+      <div className="p-3 lg:p-4">
         <div className="grid lg:grid-cols-[1fr_300px] gap-6">
 
           {/* ── Left column ── */}
