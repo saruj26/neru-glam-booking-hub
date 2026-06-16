@@ -7,8 +7,24 @@ import {
   Search, Star, Gift, Menu, X, Phone, Mail, MapPin,
   Edit, Key, Check, Crown, MessageSquare, ChevronRight,
   TrendingUp, CalendarCheck, Home, Settings, Sun, Moon, Package, Image,
+  Lightbulb,
 } from 'lucide-react';
 import type { ServiceData } from '@/components/admin/ServiceForm';
+import { getActiveTips, getFeaturedTips, formatDate, type BeautyTip } from '@/lib/tipsUtils';
+
+/* ─── Service seed (fallback when admin page not yet visited) ────── */
+const SVC_SEED: ServiceData[] = [
+  { id: 'birthday-basic',      title: 'Basic Birthday Glam',        description: 'A fresh, youthful look perfect for daytime birthday celebrations.',              category: 'birthday',  price: '₹2,500',  image: 'https://images.unsplash.com/photo-1596704017254-9b80443994d7?auto=format&fit=crop&w=800&q=80', images: ['https://images.unsplash.com/photo-1596704017254-9b80443994d7?auto=format&fit=crop&w=800&q=80'], active: true },
+  { id: 'birthday-premium',    title: 'Premium Birthday Glam',      description: 'Elevated makeup with shimmer and glow, perfect for evening parties.',            category: 'birthday',  price: '₹3,500',  image: 'https://images.unsplash.com/photo-1616683693504-3ea7e9ad6fec?auto=format&fit=crop&w=800&q=80', images: ['https://images.unsplash.com/photo-1616683693504-3ea7e9ad6fec?auto=format&fit=crop&w=800&q=80'], active: true },
+  { id: 'birthday-themed',     title: 'Themed Birthday Makeup',     description: 'Customized makeup to match your birthday theme or costume.',                      category: 'birthday',  price: '₹4,500',  image: 'https://images.unsplash.com/photo-1617220275046-90170ad2815f?auto=format&fit=crop&w=800&q=80', images: ['https://images.unsplash.com/photo-1617220275046-90170ad2815f?auto=format&fit=crop&w=800&q=80'], active: true },
+  { id: 'puberty-traditional', title: 'Traditional Ceremony Look',  description: 'Classic makeup style perfect for traditional puberty ceremonies.',                category: 'puberty',   price: '₹4,000',  image: 'https://images.unsplash.com/photo-1487412947147-5cdc1cdc5564?auto=format&fit=crop&w=800&q=80', images: ['https://images.unsplash.com/photo-1487412947147-5cdc1cdc5564?auto=format&fit=crop&w=800&q=80'], active: true },
+  { id: 'puberty-modern',      title: 'Modern Ceremony Look',       description: 'Contemporary makeup with traditional elements for a fresh take.',                 category: 'puberty',   price: '₹5,000',  image: 'https://images.unsplash.com/photo-1613324446652-383d8b677c7c?auto=format&fit=crop&w=800&q=80', images: ['https://images.unsplash.com/photo-1613324446652-383d8b677c7c?auto=format&fit=crop&w=800&q=80'], active: true },
+  { id: 'reception-minimal',   title: 'Minimal Reception Glam',     description: 'Subtle, elegant makeup perfect for daytime receptions.',                         category: 'reception', price: '₹5,500',  image: 'https://images.unsplash.com/photo-1578632292335-df3abbb0d586?auto=format&fit=crop&w=800&q=80', images: ['https://images.unsplash.com/photo-1578632292335-df3abbb0d586?auto=format&fit=crop&w=800&q=80'], active: true },
+  { id: 'reception-glamour',   title: 'Full Glamour Reception',     description: 'Show-stopping makeup with dramatic eyes and perfect contouring.',                category: 'reception', price: '₹9,000',  image: 'https://images.unsplash.com/photo-1602910344008-22f323cc1817?auto=format&fit=crop&w=800&q=80', images: ['https://images.unsplash.com/photo-1602910344008-22f323cc1817?auto=format&fit=crop&w=800&q=80'], active: true },
+  { id: 'wedding-traditional', title: 'Traditional Bridal Makeup',  description: 'Classic bridal look with traditional elements and rich colors.',                category: 'wedding',   price: '₹12,000', image: 'https://images.unsplash.com/photo-1595159901089-7d0b3608515e?auto=format&fit=crop&w=800&q=80', images: ['https://images.unsplash.com/photo-1595159901089-7d0b3608515e?auto=format&fit=crop&w=800&q=80'], active: true },
+  { id: 'wedding-luxury',      title: 'Luxury Bridal Package',      description: 'Premium bridal makeup with hair styling, draping assistance, and touch-ups.',   category: 'wedding',   price: '₹18,000', image: 'https://images.unsplash.com/photo-1607779097040-17baf87ddab0?auto=format&fit=crop&w=800&q=80', images: ['https://images.unsplash.com/photo-1607779097040-17baf87ddab0?auto=format&fit=crop&w=800&q=80'], active: true },
+  { id: 'festive-makeup',      title: 'Festive Makeup',             description: 'Special makeup for celebrations like Diwali, Eid, Christmas, etc.',              category: 'other',     price: '₹2,000',  image: 'https://images.unsplash.com/photo-1576426863848-c21f53c60b19?auto=format&fit=crop&w=800&q=80', images: ['https://images.unsplash.com/photo-1576426863848-c21f53c60b19?auto=format&fit=crop&w=800&q=80'], active: true },
+];
 
 /* ─── Types ──────────────────────────────────────────────────────── */
 type Status = 'Pending' | 'Confirmed' | 'Upcoming' | 'Completed' | 'Cancelled';
@@ -107,15 +123,14 @@ const NAV = [
   { id: 'profile',       label: 'My Profile',     icon: User            },
 ];
 
-/* ─── Service category meta ──────────────────────────────────────── */
-const SVC_CATEGORIES: { key: string; label: string; color: string; bg: string }[] = [
-  { key: 'all',       label: 'All',            color: '#7C3AED', bg: '#F5F3FF' },
-  { key: 'birthday',  label: 'Birthday',       color: '#EC4899', bg: '#FDF2F8' },
-  { key: 'puberty',   label: 'Puberty',        color: '#D97706', bg: '#FFFBEB' },
-  { key: 'reception', label: 'Reception',      color: '#0891B2', bg: '#F0F9FF' },
-  { key: 'wedding',   label: 'Wedding',        color: '#BE185D', bg: '#FDF2F8' },
-  { key: 'other',     label: 'Other',          color: '#059669', bg: '#F0FDF4' },
-];
+/* ─── Service tab config ─────────────────────────────────────────── */
+const SVC_TABS = [
+  { key: 'birthday',  label: 'Birthday'         },
+  { key: 'puberty',   label: 'Puberty Ceremony' },
+  { key: 'reception', label: 'Reception'         },
+  { key: 'wedding',   label: 'Wedding'           },
+  { key: 'other',     label: 'Other'             },
+] as const;
 
 const SIDEBAR_BG = 'linear-gradient(180deg,#2D1B69 0%,#5B21B6 45%,#7C3AED 80%,#8B5CF6 100%)';
 
@@ -222,15 +237,32 @@ const CustomerDashboard = () => {
   const [bTab,    setBTab]    = useState<'all' | 'active' | 'completed' | 'cancelled'>('all');
 
   /* ── Services state ── */
-  const [allServices,   setAllServices]   = useState<ServiceData[]>([]);
-  const [svcSearch,     setSvcSearch]     = useState('');
-  const [svcCatFilter,  setSvcCatFilter]  = useState('all');
+  const [allServices,  setAllServices] = useState<ServiceData[]>([]);
+  const [svcTab,       setSvcTab]      = useState<'birthday' | 'puberty' | 'reception' | 'wedding' | 'other'>('birthday');
 
   useEffect(() => {
     try {
       const raw = localStorage.getItem('neru-services');
-      if (raw) setAllServices(JSON.parse(raw) as ServiceData[]);
-    } catch { /* ignore */ }
+      if (raw) {
+        const parsed = JSON.parse(raw) as ServiceData[];
+        setAllServices(parsed.length ? parsed : SVC_SEED);
+        if (!parsed.length) localStorage.setItem('neru-services', JSON.stringify(SVC_SEED));
+      } else {
+        localStorage.setItem('neru-services', JSON.stringify(SVC_SEED));
+        setAllServices(SVC_SEED);
+      }
+    } catch {
+      setAllServices(SVC_SEED);
+    }
+  }, []);
+
+  /* ── Tips state ── */
+  const [tipsList,    setTipsList]    = useState<BeautyTip[]>([]);
+  const [featTips,    setFeatTips]    = useState<BeautyTip[]>([]);
+
+  useEffect(() => {
+    setTipsList(getActiveTips());
+    setFeatTips(getFeaturedTips(3));
   }, []);
 
   /* ── Notifications ── */
@@ -727,29 +759,120 @@ const CustomerDashboard = () => {
     </div>
   );
 
-  const renderTips = () => (
-    <div className="space-y-5">
-      <div>
-        <h2 className="text-2xl font-extrabold text-neru-darkGray" style={{ fontFamily: "'Playfair Display',serif" }}>Beauty Tips</h2>
-        <p className="text-gray-500 text-sm mt-1">Expert beauty secrets from our professional artists</p>
-      </div>
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {TIPS.map(t => (
-          <div key={t.title} className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group">
-            <div className="flex items-start gap-3 mb-3">
-              <div className="text-2xl flex-shrink-0 mt-0.5">{t.emoji}</div>
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-neru-purple/70 bg-neru-purple/8 px-2 py-0.5 rounded-full">{t.cat}</span>
-                <h3 className="font-bold text-neru-darkGray text-sm mt-1.5">{t.title}</h3>
-              </div>
-            </div>
-            <p className="text-gray-500 text-xs leading-relaxed">{t.tip}</p>
-            <div className="h-0.5 w-0 bg-gradient-to-r from-neru-purple to-amber-400 group-hover:w-full transition-all duration-400 mt-4 rounded-full" />
+  const renderTips = () => {
+    const CAT_COLORS: Record<string, { bg: string; text: string }> = {
+      'Skincare':        { bg: '#EDE9FE', text: '#7C3AED' },
+      'Bridal Makeup':   { bg: '#FDF2F8', text: '#BE185D' },
+      'Eye Makeup':      { bg: '#EFF6FF', text: '#1D4ED8' },
+      'Lip Care':        { bg: '#FFF1F2', text: '#E11D48' },
+      'Hair Care':       { bg: '#F0FDF4', text: '#15803D' },
+      'Nail Art':        { bg: '#FFF7ED', text: '#C2410C' },
+      'Festive Looks':   { bg: '#FFFBEB', text: '#B45309' },
+      'General Beauty':  { bg: '#F9F5FF', text: '#9333EA' },
+    };
+    const cs = (cat: string) => CAT_COLORS[cat] ?? { bg: '#F3F4F6', text: '#374151' };
+
+    const displayList = tipsList.length ? tipsList : [];
+
+    return (
+      <div className="space-y-5">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div>
+            <h2 className="text-2xl font-extrabold text-neru-darkGray" style={{ fontFamily: "'Playfair Display',serif" }}>Beauty Tips</h2>
+            <p className="text-gray-500 text-sm mt-1">Expert beauty secrets from our professional artists</p>
           </div>
-        ))}
+          <Link to="/beauty-tips"
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-neru-purple hover:underline flex-shrink-0">
+            View All Tips <ArrowRight size={14} />
+          </Link>
+        </div>
+
+        {/* Featured highlight — top 3 */}
+        {featTips.length > 0 && (
+          <div className="grid sm:grid-cols-3 gap-4">
+            {featTips.map(tip => {
+              const c = cs(tip.category);
+              return (
+                <Link key={tip.id} to={`/beauty-tips/${tip.id}`}
+                  className="group relative rounded-2xl overflow-hidden shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col min-h-[220px]">
+                  {tip.coverImage
+                    ? <img src={tip.coverImage} alt={tip.title} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                    : <div className="absolute inset-0 bg-gradient-to-br from-purple-600 to-pink-600" />
+                  }
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
+                  <div className="relative z-10 mt-auto p-5">
+                    <span className="inline-block text-[10px] font-bold px-2.5 py-1 rounded-full mb-2" style={{ background: c.bg, color: c.text }}>{tip.category}</span>
+                    <h3 className="text-white font-extrabold text-sm leading-snug line-clamp-2 mb-1">{tip.title}</h3>
+                    <div className="flex items-center gap-2 text-white/60 text-[11px]">
+                      <Clock size={10} /> {tip.readTime} min read
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        )}
+
+        {/* All tips grid */}
+        {displayList.length === 0 ? (
+          <div className="bg-white rounded-2xl p-10 text-center border border-gray-100">
+            <Lightbulb size={32} className="text-gray-200 mx-auto mb-3" />
+            <p className="text-gray-400 text-sm">No beauty tips yet. Check back soon!</p>
+          </div>
+        ) : (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {displayList.map(tip => {
+              const c = cs(tip.category);
+              return (
+                <Link key={tip.id} to={`/beauty-tips/${tip.id}`}
+                  className="group bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 overflow-hidden flex flex-col">
+                  {/* Cover */}
+                  <div className="relative h-40 overflow-hidden bg-gradient-to-br from-purple-50 to-pink-50 flex-shrink-0">
+                    {tip.coverImage
+                      ? <img src={tip.coverImage} alt={tip.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                      : <div className="w-full h-full flex items-center justify-center"><Lightbulb size={32} className="text-purple-200" /></div>
+                    }
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+                    <div className="absolute bottom-2 left-2">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: c.bg, color: c.text }}>{tip.category}</span>
+                    </div>
+                  </div>
+
+                  {/* Body */}
+                  <div className="p-4 flex flex-col flex-1">
+                    <div className="flex items-center gap-2 text-[11px] text-gray-400 mb-1.5">
+                      <Clock size={10} /> {tip.readTime} min read
+                      <span>·</span>
+                      <span>{formatDate(tip.createdAt)}</span>
+                    </div>
+                    <h3 className="font-bold text-gray-900 text-sm leading-snug group-hover:text-neru-purple transition-colors line-clamp-2 mb-1.5">
+                      {tip.title}
+                    </h3>
+                    <p className="text-gray-500 text-xs leading-relaxed line-clamp-2 flex-1">{tip.excerpt}</p>
+                    <div className="flex items-center gap-1 mt-3 text-neru-purple text-xs font-bold group-hover:gap-2 transition-all">
+                      Read Full Tip <ArrowRight size={12} />
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        )}
+
+        {/* CTA */}
+        <div className="rounded-2xl p-6 text-center" style={{ background: 'linear-gradient(135deg,#3B0764,#6D28D9,#8B5CF6)' }}>
+          <Sparkles size={22} className="text-amber-300 mx-auto mb-2" />
+          <p className="font-bold text-white mb-1">Want more expert tips?</p>
+          <p className="text-white/70 text-xs mb-4">Our full library has tips on skincare, bridal, festive looks and more</p>
+          <Link to="/beauty-tips"
+            className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full text-xs font-bold hover:-translate-y-0.5 transition-all"
+            style={{ background: 'linear-gradient(135deg,#D4A53F,#F59E0B)', color: '#3B0764' }}>
+            Browse All Beauty Tips <ArrowRight size={13} />
+          </Link>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderNotifications = () => (
     <div className="space-y-5">
@@ -884,115 +1007,92 @@ const CustomerDashboard = () => {
   );
 
   const renderServices = () => {
-    const catMeta = SVC_CATEGORIES.find(c => c.key === svcCatFilter) ?? SVC_CATEGORIES[0];
-    const filtered = allServices
-      .filter(s => s.active)
-      .filter(s => svcCatFilter === 'all' || s.category === svcCatFilter)
-      .filter(s =>
-        !svcSearch ||
-        s.title.toLowerCase().includes(svcSearch.toLowerCase()) ||
-        s.description.toLowerCase().includes(svcSearch.toLowerCase())
-      );
+    const tabServices = allServices.filter(s => s.active && s.category === svcTab);
 
     return (
       <div className="space-y-5">
         {/* Header */}
         <div>
           <h2 className="text-2xl font-extrabold text-neru-darkGray" style={{ fontFamily: "'Playfair Display',serif" }}>Our Services</h2>
-          <p className="text-gray-500 text-sm mt-1">Browse all beauty services — click any card to see full details and book</p>
-        </div>
-
-        {/* Search */}
-        <div className="relative max-w-sm">
-          <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-          <input value={svcSearch} onChange={e => setSvcSearch(e.target.value)}
-            placeholder="Search services…"
-            className="w-full pl-10 pr-4 h-10 rounded-xl border border-gray-200 bg-white text-sm text-neru-darkGray placeholder-gray-400 focus:outline-none focus:border-neru-purple/40 focus:ring-2 focus:ring-neru-purple/10 transition-all" />
+          <p className="text-gray-500 text-sm mt-1">Browse all beauty services — click any card to see full details and book instantly</p>
         </div>
 
         {/* Category tabs */}
-        <div className="flex gap-2 flex-wrap">
-          {SVC_CATEGORIES.map(c => (
-            <button key={c.key} onClick={() => setSvcCatFilter(c.key)}
-              className="px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all"
-              style={svcCatFilter === c.key
-                ? { background: c.color, color: '#fff', boxShadow: `0 4px 12px ${c.color}40` }
-                : { background: c.bg, color: c.color }}>
-              {c.label}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-1.5 flex gap-1 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+          {SVC_TABS.map(t => (
+            <button key={t.key} onClick={() => setSvcTab(t.key)}
+              className="flex-shrink-0 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200"
+              style={svcTab === t.key
+                ? { background: 'linear-gradient(135deg,#7C3AED,#8B5CF6)', color: '#fff', boxShadow: '0 4px 12px rgba(124,58,237,0.25)' }
+                : { color: '#6B7280' }}>
+              {t.label}
             </button>
           ))}
         </div>
 
-        {/* Count */}
-        <p className="text-xs text-gray-400">{filtered.length} service{filtered.length !== 1 ? 's' : ''} found</p>
-
-        {/* Grid */}
-        {filtered.length === 0 ? (
+        {/* Cards grid */}
+        {tabServices.length === 0 ? (
           <div className="bg-white rounded-2xl p-10 text-center border border-gray-100">
             <Package size={32} className="text-gray-200 mx-auto mb-3" />
-            <p className="text-gray-400 text-sm">No services found. Try a different filter.</p>
+            <p className="text-gray-400 text-sm">No services in this category yet.</p>
           </div>
         ) : (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filtered.map(svc => {
-              const cat = SVC_CATEGORIES.find(c => c.key === svc.category);
-              return (
+          <>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {tabServices.map(svc => (
                 <div key={svc.id}
-                  className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200 overflow-hidden flex flex-col group">
-                  {/* Thumbnail */}
-                  <div className="relative h-44 overflow-hidden flex-shrink-0 bg-purple-50">
+                  className="group relative bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 border border-gray-100">
+                  {/* Image — same height as public CategoryCard */}
+                  <div className="h-56 overflow-hidden relative">
                     {svc.image
                       ? <img src={svc.image} alt={svc.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                      : <div className="w-full h-full flex items-center justify-center"><Image size={36} className="text-purple-200" /></div>
+                      : <div className="w-full h-full bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center"><Image size={36} className="text-purple-200" /></div>
                     }
                     <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-                    {/* Category badge */}
-                    {cat && (
-                      <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full text-[10px] font-extrabold"
-                        style={{ background: cat.bg, color: cat.color }}>
-                        {cat.label}
-                      </span>
-                    )}
-                    {/* Multi-image badge */}
+                    <span className="absolute bottom-3 left-3 bg-neru-gold text-white text-xs font-bold px-3 py-1 rounded-full shadow">
+                      {svc.price}
+                    </span>
                     {(svc.images?.length ?? 0) > 1 && (
-                      <span className="absolute top-3 right-3 px-2 py-0.5 rounded-full text-[10px] font-bold bg-black/50 text-white flex items-center gap-1">
+                      <span className="absolute top-3 right-3 bg-black/50 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
                         <Image size={9} /> {svc.images.length}
                       </span>
                     )}
-                    {/* Price overlay */}
-                    <div className="absolute bottom-3 right-3">
-                      <span className="px-2.5 py-1 rounded-full text-xs font-extrabold text-white"
-                        style={{ background: 'linear-gradient(135deg,#D4A53F,#F59E0B)' }}>
-                        {svc.price}
-                      </span>
-                    </div>
                   </div>
 
-                  {/* Body */}
-                  <div className="p-4 flex flex-col flex-1">
-                    <h3 className="font-bold text-gray-900 text-sm leading-snug mb-1.5 group-hover:text-neru-purple transition-colors">
+                  {/* Content */}
+                  <div className="p-5">
+                    <h3 className="text-base font-bold text-neru-darkGray mb-2 group-hover:text-neru-purple transition-colors duration-200">
                       {svc.title}
                     </h3>
-                    <p className="text-gray-500 text-xs leading-relaxed line-clamp-2 flex-1">{svc.description}</p>
-
-                    {/* Actions */}
-                    <div className="flex gap-2 mt-4">
+                    <p className="text-gray-500 text-sm leading-relaxed mb-4 line-clamp-2">{svc.description}</p>
+                    <div className="flex items-center gap-3">
                       <Link to={`/service/${svc.id}`}
-                        className="flex-1 flex items-center justify-center gap-1.5 h-9 rounded-xl text-xs font-bold text-neru-purple border-2 border-neru-purple/20 hover:border-neru-purple hover:bg-purple-50 transition-all">
-                        View Details
+                        className="inline-flex items-center gap-1.5 text-sm font-semibold text-neru-purple hover:gap-2.5 transition-all duration-200 flex-1">
+                        View Details <ArrowRight size={15} className="transition-transform duration-200 group-hover:translate-x-1" />
                       </Link>
-                      <Link
-                        to={`/booking?category=${svc.category}&serviceType=${encodeURIComponent(svc.title)}&serviceId=${svc.id}`}
-                        className="flex-1 flex items-center justify-center gap-1.5 h-9 rounded-xl text-xs font-bold text-white hover:opacity-90 transition-all shadow-sm"
-                        style={{ background: 'linear-gradient(135deg,#7C3AED,#8B5CF6)' }}>
-                        Book Now <ArrowRight size={12} />
+                      <Link to={`/booking?category=${svc.category}&serviceType=${encodeURIComponent(svc.title)}&serviceId=${svc.id}`}
+                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-white shadow-sm hover:opacity-90 transition-all flex-shrink-0"
+                        style={{ background: 'linear-gradient(135deg,#D4A53F,#F59E0B)' }}>
+                        Book Now
                       </Link>
                     </div>
                   </div>
+
+                  {/* Bottom accent bar */}
+                  <div className="absolute bottom-0 left-0 h-0.5 w-0 bg-gradient-to-r from-neru-purple to-purple-400 group-hover:w-full transition-all duration-400 rounded-b-2xl" />
                 </div>
-              );
-            })}
-          </div>
+              ))}
+            </div>
+
+            {/* Book CTA */}
+            <div className="text-center pt-2">
+              <Link to="/booking"
+                className="inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold text-white rounded-full shadow-md hover:-translate-y-0.5 transition-all duration-200"
+                style={{ background: 'linear-gradient(135deg,#7C3AED,#8B5CF6)' }}>
+                Book This Service <ArrowRight size={15} />
+              </Link>
+            </div>
+          </>
         )}
       </div>
     );
