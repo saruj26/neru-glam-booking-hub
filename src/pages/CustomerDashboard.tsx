@@ -6,8 +6,9 @@ import {
   User, LogOut, Clock, CheckCircle, ArrowRight,
   Search, Star, Gift, Menu, X, Phone, Mail, MapPin,
   Edit, Key, Check, Crown, MessageSquare, ChevronRight,
-  TrendingUp, CalendarCheck, Home, Settings, Sun, Moon,
+  TrendingUp, CalendarCheck, Home, Settings, Sun, Moon, Package, Image,
 } from 'lucide-react';
+import type { ServiceData } from '@/components/admin/ServiceForm';
 
 /* ─── Types ──────────────────────────────────────────────────────── */
 type Status = 'Pending' | 'Confirmed' | 'Upcoming' | 'Completed' | 'Cancelled';
@@ -97,12 +98,23 @@ const NOTIF_ICON: Record<string, { icon: typeof CheckCircle; cls: string }> = {
 const NAV = [
   { id: 'overview',      label: 'Overview',       icon: LayoutDashboard },
   { id: 'bookings',      label: 'My Bookings',    icon: Calendar        },
+  { id: 'services',      label: 'Our Services',   icon: Package         },
   { id: 'offers',        label: 'Offers & Deals', icon: Tag             },
   { id: 'loyalty',       label: 'Loyalty Rewards',icon: Award           },
   { id: 'recommended',   label: 'Recommended',    icon: Sparkles        },
   { id: 'tips',          label: 'Beauty Tips',    icon: Leaf            },
   { id: 'notifications', label: 'Notifications',  icon: Bell            },
   { id: 'profile',       label: 'My Profile',     icon: User            },
+];
+
+/* ─── Service category meta ──────────────────────────────────────── */
+const SVC_CATEGORIES: { key: string; label: string; color: string; bg: string }[] = [
+  { key: 'all',       label: 'All',            color: '#7C3AED', bg: '#F5F3FF' },
+  { key: 'birthday',  label: 'Birthday',       color: '#EC4899', bg: '#FDF2F8' },
+  { key: 'puberty',   label: 'Puberty',        color: '#D97706', bg: '#FFFBEB' },
+  { key: 'reception', label: 'Reception',      color: '#0891B2', bg: '#F0F9FF' },
+  { key: 'wedding',   label: 'Wedding',        color: '#BE185D', bg: '#FDF2F8' },
+  { key: 'other',     label: 'Other',          color: '#059669', bg: '#F0FDF4' },
 ];
 
 const SIDEBAR_BG = 'linear-gradient(180deg,#2D1B69 0%,#5B21B6 45%,#7C3AED 80%,#8B5CF6 100%)';
@@ -208,6 +220,18 @@ const CustomerDashboard = () => {
   /* ── Bookings state ── */
   const [bSearch, setBSearch] = useState('');
   const [bTab,    setBTab]    = useState<'all' | 'active' | 'completed' | 'cancelled'>('all');
+
+  /* ── Services state ── */
+  const [allServices,   setAllServices]   = useState<ServiceData[]>([]);
+  const [svcSearch,     setSvcSearch]     = useState('');
+  const [svcCatFilter,  setSvcCatFilter]  = useState('all');
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('neru-services');
+      if (raw) setAllServices(JSON.parse(raw) as ServiceData[]);
+    } catch { /* ignore */ }
+  }, []);
 
   /* ── Notifications ── */
   const [readIds, setReadIds] = useState<number[]>([3, 4, 5]);
@@ -378,9 +402,9 @@ const CustomerDashboard = () => {
             <Link to="/booking" className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-neru-darkGray hover:opacity-90 transition-all shadow-lg" style={{ background: 'linear-gradient(135deg,#D4A53F,#F59E0B)' }}>
               <Calendar size={14} /> Book Now
             </Link>
-            <Link to="/services" className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-white/15 hover:bg-white/25 transition-all">
-              <Sparkles size={14} /> Services
-            </Link>
+            <button onClick={() => nav('services')} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-white/15 hover:bg-white/25 transition-all">
+              <Package size={14} /> Services
+            </button>
             <Link to="/contact" className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-white/15 hover:bg-white/25 transition-all">
               <Phone size={14} /> Contact
             </Link>
@@ -859,10 +883,126 @@ const CustomerDashboard = () => {
     </div>
   );
 
+  const renderServices = () => {
+    const catMeta = SVC_CATEGORIES.find(c => c.key === svcCatFilter) ?? SVC_CATEGORIES[0];
+    const filtered = allServices
+      .filter(s => s.active)
+      .filter(s => svcCatFilter === 'all' || s.category === svcCatFilter)
+      .filter(s =>
+        !svcSearch ||
+        s.title.toLowerCase().includes(svcSearch.toLowerCase()) ||
+        s.description.toLowerCase().includes(svcSearch.toLowerCase())
+      );
+
+    return (
+      <div className="space-y-5">
+        {/* Header */}
+        <div>
+          <h2 className="text-2xl font-extrabold text-neru-darkGray" style={{ fontFamily: "'Playfair Display',serif" }}>Our Services</h2>
+          <p className="text-gray-500 text-sm mt-1">Browse all beauty services — click any card to see full details and book</p>
+        </div>
+
+        {/* Search */}
+        <div className="relative max-w-sm">
+          <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+          <input value={svcSearch} onChange={e => setSvcSearch(e.target.value)}
+            placeholder="Search services…"
+            className="w-full pl-10 pr-4 h-10 rounded-xl border border-gray-200 bg-white text-sm text-neru-darkGray placeholder-gray-400 focus:outline-none focus:border-neru-purple/40 focus:ring-2 focus:ring-neru-purple/10 transition-all" />
+        </div>
+
+        {/* Category tabs */}
+        <div className="flex gap-2 flex-wrap">
+          {SVC_CATEGORIES.map(c => (
+            <button key={c.key} onClick={() => setSvcCatFilter(c.key)}
+              className="px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all"
+              style={svcCatFilter === c.key
+                ? { background: c.color, color: '#fff', boxShadow: `0 4px 12px ${c.color}40` }
+                : { background: c.bg, color: c.color }}>
+              {c.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Count */}
+        <p className="text-xs text-gray-400">{filtered.length} service{filtered.length !== 1 ? 's' : ''} found</p>
+
+        {/* Grid */}
+        {filtered.length === 0 ? (
+          <div className="bg-white rounded-2xl p-10 text-center border border-gray-100">
+            <Package size={32} className="text-gray-200 mx-auto mb-3" />
+            <p className="text-gray-400 text-sm">No services found. Try a different filter.</p>
+          </div>
+        ) : (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filtered.map(svc => {
+              const cat = SVC_CATEGORIES.find(c => c.key === svc.category);
+              return (
+                <div key={svc.id}
+                  className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200 overflow-hidden flex flex-col group">
+                  {/* Thumbnail */}
+                  <div className="relative h-44 overflow-hidden flex-shrink-0 bg-purple-50">
+                    {svc.image
+                      ? <img src={svc.image} alt={svc.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                      : <div className="w-full h-full flex items-center justify-center"><Image size={36} className="text-purple-200" /></div>
+                    }
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+                    {/* Category badge */}
+                    {cat && (
+                      <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full text-[10px] font-extrabold"
+                        style={{ background: cat.bg, color: cat.color }}>
+                        {cat.label}
+                      </span>
+                    )}
+                    {/* Multi-image badge */}
+                    {(svc.images?.length ?? 0) > 1 && (
+                      <span className="absolute top-3 right-3 px-2 py-0.5 rounded-full text-[10px] font-bold bg-black/50 text-white flex items-center gap-1">
+                        <Image size={9} /> {svc.images.length}
+                      </span>
+                    )}
+                    {/* Price overlay */}
+                    <div className="absolute bottom-3 right-3">
+                      <span className="px-2.5 py-1 rounded-full text-xs font-extrabold text-white"
+                        style={{ background: 'linear-gradient(135deg,#D4A53F,#F59E0B)' }}>
+                        {svc.price}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Body */}
+                  <div className="p-4 flex flex-col flex-1">
+                    <h3 className="font-bold text-gray-900 text-sm leading-snug mb-1.5 group-hover:text-neru-purple transition-colors">
+                      {svc.title}
+                    </h3>
+                    <p className="text-gray-500 text-xs leading-relaxed line-clamp-2 flex-1">{svc.description}</p>
+
+                    {/* Actions */}
+                    <div className="flex gap-2 mt-4">
+                      <Link to={`/service/${svc.id}`}
+                        className="flex-1 flex items-center justify-center gap-1.5 h-9 rounded-xl text-xs font-bold text-neru-purple border-2 border-neru-purple/20 hover:border-neru-purple hover:bg-purple-50 transition-all">
+                        View Details
+                      </Link>
+                      <Link
+                        to={`/booking?category=${svc.category}&serviceType=${encodeURIComponent(svc.title)}&serviceId=${svc.id}`}
+                        className="flex-1 flex items-center justify-center gap-1.5 h-9 rounded-xl text-xs font-bold text-white hover:opacity-90 transition-all shadow-sm"
+                        style={{ background: 'linear-gradient(135deg,#7C3AED,#8B5CF6)' }}>
+                        Book Now <ArrowRight size={12} />
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const renderSection = () => {
     switch (section) {
       case 'overview':      return renderOverview();
       case 'bookings':      return renderBookings();
+      case 'services':      return renderServices();
       case 'offers':        return renderOffers();
       case 'loyalty':       return renderLoyalty();
       case 'recommended':   return renderRecommended();
@@ -1006,6 +1146,7 @@ const CustomerDashboard = () => {
             {([
               { icon: Calendar,     label: 'Book Now',  action: () => navigate('/booking'), color: '#7C3AED', bg: '#7C3AED12' },
               { icon: CalendarCheck,label: 'Bookings',  action: () => nav('bookings'),      color: '#D4A53F', bg: '#D4A53F12' },
+              { icon: Package,      label: 'Services',  action: () => nav('services'),      color: '#7C3AED', bg: '#7C3AED12' },
               { icon: Tag,          label: 'Offers',    action: () => nav('offers'),         color: '#EC4899', bg: '#EC489912' },
               { icon: Phone,        label: 'Contact',   action: () => navigate('/contact'), color: '#10B981', bg: '#10B98112' },
             ] as const).map(({ icon: Icon, label, action, color, bg }) => (

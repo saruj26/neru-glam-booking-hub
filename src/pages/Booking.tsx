@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { format } from 'date-fns';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -17,7 +17,7 @@ import {
   Popover, PopoverContent, PopoverTrigger,
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { CalendarIcon, CreditCard, Banknote, Tag, CheckCircle, Sparkles, Clock, ArrowRight, Zap } from 'lucide-react';
+import { CalendarIcon, CreditCard, Banknote, Tag, CheckCircle, Sparkles, Clock, ArrowRight, Zap, Package, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from '@/components/ui/use-toast';
 import Header from '@/components/Header';
@@ -298,9 +298,35 @@ function ConfirmationModal({ bookingId, paymentMethod, pricing, onClose }:
   );
 }
 
+/* ─── Pre-selected service banner ───────────────────────────────────────── */
+function SelectedServiceBanner({
+  serviceName, categoryLabel, onClear,
+}: { serviceName: string; categoryLabel: string; onClear: () => void }) {
+  return (
+    <div className="flex items-center gap-3 p-4 rounded-2xl border border-purple-200 mb-6"
+      style={{ background: 'linear-gradient(135deg,#F5F3FF,#EDE9FE)' }}>
+      <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+        style={{ background: 'linear-gradient(135deg,#7C3AED,#8B5CF6)' }}>
+        <Package size={18} className="text-white" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-bold text-purple-500 uppercase tracking-wider mb-0.5">Selected Service</p>
+        <p className="font-bold text-purple-900 text-sm truncate">{serviceName}</p>
+        <p className="text-xs text-purple-500">{categoryLabel}</p>
+      </div>
+      <button onClick={onClear}
+        className="w-7 h-7 rounded-full bg-purple-100 hover:bg-purple-200 flex items-center justify-center text-purple-500 flex-shrink-0 transition-colors"
+        title="Clear selection">
+        <X size={13} />
+      </button>
+    </div>
+  );
+}
+
 /* ─── Main Booking Page ──────────────────────────────────────────────────── */
 const Booking = () => {
   const navigate = useNavigate();
+  const [searchParams]  = useSearchParams();
   const [serviceCategory, setServiceCategory] = useState<string | null>(null);
   const [serviceType,     setServiceType]     = useState<string | null>(null);
   const [paymentMethod,   setPaymentMethod]   = useState<'online' | 'cash'>('online');
@@ -309,9 +335,24 @@ const Booking = () => {
   const [payConfig,       setPayConfig]        = useState(getPaymentConfig());
   const [confirmedId,     setConfirmedId]      = useState<string | null>(null);
   const [submitting,      setSubmitting]       = useState(false);
+  const [preSelectedName, setPreSelectedName]  = useState<string | null>(null);
 
   /* Load payment config */
   useEffect(() => { setPayConfig(getPaymentConfig()); }, []);
+
+  /* Pre-fill from URL params (?category=wedding&serviceType=Traditional+Bridal+Makeup) */
+  useEffect(() => {
+    const cat  = searchParams.get('category');
+    const type = searchParams.get('serviceType');
+    if (cat && type) {
+      setServiceCategory(cat);
+      setServiceType(type);
+      setPreSelectedName(type);
+      form.setValue('serviceCategory', cat);
+      form.setValue('serviceType', type);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   /* Recalculate pricing when category or type changes */
   useEffect(() => {
@@ -412,6 +453,21 @@ const Booking = () => {
                     Book Your Beauty Service
                   </h2>
                 </div>
+
+                {/* Pre-selected service banner */}
+                {preSelectedName && serviceCategory && (
+                  <SelectedServiceBanner
+                    serviceName={preSelectedName}
+                    categoryLabel={categoryLabels[serviceCategory] ?? serviceCategory}
+                    onClear={() => {
+                      setPreSelectedName(null);
+                      setServiceCategory(null);
+                      setServiceType(null);
+                      form.setValue('serviceCategory', '');
+                      form.setValue('serviceType', '');
+                    }}
+                  />
+                )}
 
                 <Form {...form}>
                   <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">

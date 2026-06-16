@@ -295,7 +295,7 @@ export default function ServiceDetail() {
                         <span>Duration varies by package</span>
                       </div>
                       {service.active ? (
-                        <Link to={`/booking?service=${service.id}&name=${encodeURIComponent(service.title)}`}
+                        <Link to={`/booking?category=${service.category}&serviceType=${encodeURIComponent(service.title)}&serviceId=${service.id}`}
                           className="flex items-center justify-center gap-2 w-full h-11 rounded-xl text-white font-bold text-sm shadow-md hover:-translate-y-0.5 hover:shadow-lg transition-all"
                           style={{ background: 'linear-gradient(135deg,#D4A53F,#F59E0B)', color: '#fff' }}>
                           Book This Service <ArrowRight size={15} />
