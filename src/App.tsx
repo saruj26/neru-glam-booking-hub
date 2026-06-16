@@ -27,6 +27,9 @@ import AdminOffers from "./pages/admin/AdminOffers";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminServiceCategories from "./pages/admin/AdminServiceCategories";
 import AdminGallery from "./pages/admin/AdminGallery";
+import AdminBeautyTips from "./pages/admin/AdminBeautyTips";
+import BeautyTips from "./pages/BeautyTips";
+import BeautyTipDetail from "./pages/BeautyTipDetail";
 
 const queryClient = new QueryClient();
 
@@ -59,6 +62,9 @@ const App = () => (
             <Route path="/admin/settings" element={<AdminSettings />} />
             <Route path="/admin/service-categories" element={<AdminServiceCategories />} />
             <Route path="/admin/gallery" element={<AdminGallery />} />
+            <Route path="/admin/beauty-tips" element={<AdminBeautyTips />} />
+            <Route path="/beauty-tips" element={<BeautyTips />} />
+            <Route path="/beauty-tips/:id" element={<BeautyTipDetail />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

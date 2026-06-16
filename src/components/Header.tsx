@@ -4,10 +4,11 @@ import { cn } from '@/lib/utils';
 import { Menu, X, Sparkles, CalendarCheck } from 'lucide-react';
 
 const navLinks = [
-  { to: '/',         label: 'Home'       },
-  { to: '/services', label: 'Services'   },
-  { to: '/gallery',  label: 'Gallery'    },
-  { to: '/contact',  label: 'Contact Us' },
+  { to: '/',             label: 'Home'        },
+  { to: '/services',     label: 'Services'    },
+  { to: '/gallery',      label: 'Gallery'     },
+  { to: '/beauty-tips',  label: 'Beauty Tips' },
+  { to: '/contact',      label: 'Contact Us'  },
 ];
 
 const Header = () => {

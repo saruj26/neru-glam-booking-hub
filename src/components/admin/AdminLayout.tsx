@@ -16,6 +16,7 @@ import {
   CreditCard,
   Layers,
   Image,
+  Lightbulb,
 } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 
@@ -32,6 +33,7 @@ const menuItems = [
   { path: '/admin/offers',             icon: Tag,           label: 'Offers'             },
   { path: '/admin/reviews',            icon: MessageSquare, label: 'Reviews'            },
   { path: '/admin/payment-settings',   icon: CreditCard,    label: 'Payment Settings'   },
+  { path: '/admin/beauty-tips',        icon: Lightbulb,     label: 'Beauty Tips'         },
   { path: '/admin/settings',           icon: Settings,      label: 'Settings'           },
 ];
 
