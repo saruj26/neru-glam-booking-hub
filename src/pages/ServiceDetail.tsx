@@ -18,6 +18,18 @@ function loadService(id: string): ServiceData | null {
   } catch { return null; }
 }
 
+/* ── parse "₹2,500" → 2500 ─────────────────────────────────── */
+function parseServicePrice(priceStr: string): number {
+  const n = parseInt(priceStr.replace(/[₹,\s]/g, ''), 10);
+  return isNaN(n) ? 0 : n;
+}
+
+/* ── build booking URL with pre-fill params ─────────────────── */
+function bookingUrl(service: ServiceData): string {
+  const price = parseServicePrice(service.price);
+  return `/booking?category=${service.category}&serviceType=${encodeURIComponent(service.title)}&serviceId=${service.id}&price=${price}`;
+}
+
 /* ── Image Carousel ────────────────────────────────────────────── */
 function ImageCarousel({ images, title }: { images: string[]; title: string }) {
   const [active, setActive]     = useState(0);
@@ -295,7 +307,7 @@ export default function ServiceDetail() {
                         <span>Duration varies by package</span>
                       </div>
                       {service.active ? (
-                        <Link to={`/booking?category=${service.category}&serviceType=${encodeURIComponent(service.title)}&serviceId=${service.id}`}
+                        <Link to={bookingUrl(service)}
                           className="flex items-center justify-center gap-2 w-full h-11 rounded-xl text-white font-bold text-sm shadow-md hover:-translate-y-0.5 hover:shadow-lg transition-all"
                           style={{ background: 'linear-gradient(135deg,#D4A53F,#F59E0B)', color: '#fff' }}>
                           Book This Service <ArrowRight size={15} />
@@ -351,7 +363,7 @@ export default function ServiceDetail() {
               Book your {service.title} appointment today and let us create your perfect look.
             </p>
             {service.active && (
-              <Link to={`/booking?service=${service.id}&name=${encodeURIComponent(service.title)}`}
+              <Link to={bookingUrl(service)}
                 className="inline-flex items-center gap-2 px-7 py-3 rounded-full text-sm font-bold hover:-translate-y-0.5 hover:shadow-lg transition-all"
                 style={{ background: 'linear-gradient(135deg,#D4A53F,#F59E0B)', color: '#3B0764' }}>
                 Book Now <ArrowRight size={15} />

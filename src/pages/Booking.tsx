@@ -334,16 +334,18 @@ const Booking = () => {
   const [activeoffer,     setActiveOffer]      = useState<Offer | null>(null);
   const [payConfig,       setPayConfig]        = useState(getPaymentConfig());
   const [confirmedId,     setConfirmedId]      = useState<string | null>(null);
-  const [submitting,      setSubmitting]       = useState(false);
-  const [preSelectedName, setPreSelectedName]  = useState<string | null>(null);
+  const [submitting,       setSubmitting]       = useState(false);
+  const [preSelectedName,  setPreSelectedName]  = useState<string | null>(null);
+  const [preSelectedPrice, setPreSelectedPrice] = useState<number | null>(null);
 
   /* Load payment config */
   useEffect(() => { setPayConfig(getPaymentConfig()); }, []);
 
-  /* Pre-fill from URL params (?category=wedding&serviceType=Traditional+Bridal+Makeup) */
+  /* Pre-fill from URL params (?category=wedding&serviceType=...&price=12000) */
   useEffect(() => {
-    const cat  = searchParams.get('category');
-    const type = searchParams.get('serviceType');
+    const cat   = searchParams.get('category');
+    const type  = searchParams.get('serviceType');
+    const price = searchParams.get('price');
     if (cat && type) {
       setServiceCategory(cat);
       setServiceType(type);
@@ -351,17 +353,22 @@ const Booking = () => {
       form.setValue('serviceCategory', cat);
       form.setValue('serviceType', type);
     }
+    if (price) {
+      const parsed = parseInt(price, 10);
+      if (!isNaN(parsed) && parsed > 0) setPreSelectedPrice(parsed);
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /* Recalculate pricing when category or type changes */
   useEffect(() => {
     if (!serviceCategory || !serviceType) { setPricing(null); return; }
-    const price = getServicePrice(serviceCategory, serviceType);
+    // Use the real service price from URL if available, otherwise fall back to catalog
+    const price = preSelectedPrice ?? getServicePrice(serviceCategory, serviceType);
     const offer = getBestOffer(serviceCategory);
     setActiveOffer(offer);
     setPricing(calculatePricing(price, offer, payConfig.advancePercent));
-  }, [serviceCategory, serviceType, payConfig.advancePercent]);
+  }, [serviceCategory, serviceType, payConfig.advancePercent, preSelectedPrice]);
 
   /* Default payment method to first available */
   useEffect(() => {
@@ -461,6 +468,7 @@ const Booking = () => {
                     categoryLabel={categoryLabels[serviceCategory] ?? serviceCategory}
                     onClear={() => {
                       setPreSelectedName(null);
+                      setPreSelectedPrice(null);
                       setServiceCategory(null);
                       setServiceType(null);
                       form.setValue('serviceCategory', '');
@@ -513,7 +521,7 @@ const Booking = () => {
                       <FormField control={form.control} name="serviceCategory" render={({ field }) => (
                         <FormItem>
                           <FormLabel className="text-xs font-bold text-gray-500 uppercase tracking-wider">Service Category</FormLabel>
-                          <Select onValueChange={v => { field.onChange(v); setServiceCategory(v); setServiceType(null); form.setValue('serviceType', ''); }}
+                          <Select onValueChange={v => { field.onChange(v); setServiceCategory(v); setServiceType(null); setPreSelectedPrice(null); form.setValue('serviceType', ''); }}
                             defaultValue={field.value}>
                             <FormControl>
                               <SelectTrigger className="h-11 rounded-xl border-gray-200 focus:ring-neru-purple/30">
@@ -530,25 +538,32 @@ const Booking = () => {
                         </FormItem>
                       )} />
 
-                      <FormField control={form.control} name="serviceType" render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-xs font-bold text-gray-500 uppercase tracking-wider">Service Type</FormLabel>
-                          <Select onValueChange={v => { field.onChange(v); setServiceType(v); }}
-                            defaultValue={field.value} disabled={!serviceCategory}>
-                            <FormControl>
-                              <SelectTrigger className="h-11 rounded-xl border-gray-200 focus:ring-neru-purple/30">
-                                <SelectValue placeholder={serviceCategory ? 'Select type' : 'First select a category'} />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {serviceCategory && serviceOptions[serviceCategory]?.map(opt => (
-                                <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage className="text-xs" />
-                        </FormItem>
-                      )} />
+                      <FormField control={form.control} name="serviceType" render={({ field }) => {
+                        // Merge pre-selected name into options if not already present
+                        const baseOpts = serviceCategory ? (serviceOptions[serviceCategory] ?? []) : [];
+                        const opts = preSelectedName && !baseOpts.includes(preSelectedName)
+                          ? [preSelectedName, ...baseOpts]
+                          : baseOpts;
+                        return (
+                          <FormItem>
+                            <FormLabel className="text-xs font-bold text-gray-500 uppercase tracking-wider">Service Type</FormLabel>
+                            <Select onValueChange={v => { field.onChange(v); setServiceType(v); if (v !== preSelectedName) setPreSelectedPrice(null); }}
+                              defaultValue={field.value} disabled={!serviceCategory}>
+                              <FormControl>
+                                <SelectTrigger className="h-11 rounded-xl border-gray-200 focus:ring-neru-purple/30">
+                                  <SelectValue placeholder={serviceCategory ? 'Select type' : 'First select a category'} />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {opts.map(opt => (
+                                  <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage className="text-xs" />
+                          </FormItem>
+                        );
+                      }} />
                     </div>
 
                     {/* Date + Time */}
