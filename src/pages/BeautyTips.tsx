@@ -143,33 +143,52 @@ export default function BeautyTips() {
       <main className="flex-grow">
 
         {/* ── Hero ────────────────────────────────────────────── */}
-        <section className="relative overflow-hidden py-24 md:py-32"
-          style={{ background: 'linear-gradient(135deg,#3B0764 0%,#6D28D9 40%,#8B5CF6 70%,#B45309 100%)' }}>
+        <section className="relative overflow-hidden"
+          style={{ background: 'linear-gradient(135deg,#3B0764 0%,#6D28D9 45%,#8B5CF6 75%,#92400E 100%)', paddingTop: '80px', paddingBottom: '90px' }}>
+          {/* Soft background texture */}
           <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1487412947147-5cdc1cdc5564?auto=format&fit=crop&w=1600&q=80')] bg-cover bg-center opacity-10" />
-          <div className="absolute -bottom-1 left-0 right-0 h-20 bg-gradient-to-t from-[#FAFBFF] to-transparent" />
+          {/* Decorative blobs */}
+          <div className="absolute top-0 left-1/4 w-96 h-96 rounded-full opacity-20 blur-3xl pointer-events-none"
+            style={{ background: 'radial-gradient(circle,#D4A53F,transparent)' }} />
+          <div className="absolute bottom-0 right-1/4 w-72 h-72 rounded-full opacity-15 blur-3xl pointer-events-none"
+            style={{ background: 'radial-gradient(circle,#8B5CF6,transparent)' }} />
+          {/* Bottom page-colour fade */}
+          <div className="absolute -bottom-1 left-0 right-0 h-16 bg-gradient-to-t from-[#FAFBFF] to-transparent pointer-events-none" />
+
           <div className="container mx-auto px-4 relative z-10 text-center">
-            <SectionBadge text="Expert Advice" />
-            <h1 className="text-4xl md:text-6xl font-extrabold text-white mb-5 leading-tight"
-              style={{ fontFamily: "'Playfair Display',serif" }}>
-              Beauty Tips &
-              <span className="block text-transparent bg-clip-text mt-1"
-                style={{ backgroundImage: 'linear-gradient(to right,#FCD34D,#D4A53F)' }}>
-                Expert Guides
-              </span>
+            {/* Badge — white/amber on dark bg */}
+            <div className="inline-flex items-center gap-2 bg-white/15 border border-white/25 backdrop-blur-sm px-5 py-2 rounded-full text-white text-xs font-semibold mb-6 tracking-wider uppercase">
+              <Lightbulb size={13} className="text-amber-300" /> Expert Beauty Advice
+            </div>
+
+            <h1 className="font-extrabold text-white mb-5 leading-tight"
+              style={{ fontFamily: "'Playfair Display',serif", fontSize: 'clamp(2.2rem,6vw,3.75rem)' }}>
+              Beauty Tips &amp;
+              <span className="block mt-1" style={{ color: '#FCD34D' }}>Expert Guides</span>
             </h1>
-            <p className="text-lg text-white/80 max-w-2xl mx-auto mb-8">
-              Discover professional beauty secrets, makeup tutorials, and skincare advice from our expert artists at Neru Beauty Studio.
+
+            <p className="text-white/80 max-w-2xl mx-auto mb-6 leading-relaxed"
+              style={{ fontSize: 'clamp(0.95rem,2vw,1.125rem)' }}>
+              Discover professional beauty secrets, makeup tutorials, and skincare advice
+              from our expert artists at Neru Beauty Studio.
             </p>
-            <div className="flex items-center justify-center gap-3 text-white/60 text-sm">
-              <BookOpen size={15} /> <span>{allTips.length} expert tips published</span>
+
+            {/* Stats row */}
+            <div className="flex items-center justify-center gap-2 text-white/60 text-sm mb-8">
+              <BookOpen size={14} className="text-amber-300" />
+              <span>{allTips.length} expert tips published</span>
             </div>
 
             {/* Search bar */}
-            <div className="max-w-md mx-auto mt-8 relative">
-              <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input value={search} onChange={e => setSearch(e.target.value)}
+            <div className="max-w-lg mx-auto relative">
+              <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              <input
+                value={search}
+                onChange={e => setSearch(e.target.value)}
                 placeholder="Search tips, categories, or tags…"
-                className="w-full h-12 pl-11 pr-4 rounded-2xl text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300 bg-white shadow-lg" />
+                className="w-full h-13 pl-11 pr-5 rounded-2xl text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-400 bg-white shadow-xl"
+                style={{ height: '52px' }}
+              />
             </div>
           </div>
         </section>

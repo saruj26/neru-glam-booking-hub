@@ -60,17 +60,17 @@ const Header = () => {
                   key={to}
                   to={to}
                   className={cn(
-                    'relative px-4 py-2 text-sm font-medium rounded-full transition-all duration-200 select-none',
+                    'relative px-4 py-2 text-sm rounded-full transition-all duration-200 select-none',
                     active
-                      ? 'text-neru-purple'
-                      : 'text-gray-600 hover:text-neru-purple hover:bg-purple-50',
+                      ? 'text-neru-purple font-bold bg-purple-50'
+                      : 'text-gray-600 font-medium hover:text-neru-purple hover:bg-purple-50',
                   )}
                 >
                   {label}
                   <span
                     className={cn(
                       'absolute -bottom-0.5 left-1/2 -translate-x-1/2 h-0.5 rounded-full bg-gradient-to-r from-neru-purple to-neru-gold transition-all duration-300',
-                      active ? 'w-6 opacity-100' : 'w-0 opacity-0',
+                      active ? 'w-8 opacity-100' : 'w-0 opacity-0',
                     )}
                   />
                 </Link>
