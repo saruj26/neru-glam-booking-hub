@@ -63,10 +63,11 @@ public class GalleryController : ControllerBase
             filter &= Builders<GalleryImage>.Filter.Eq(i => i.Featured, featured.Value);
 
         var query = _db.GalleryImages.Find(filter).SortBy(i => i.Order);
-        if (limit.HasValue)
-            query = (IFindFluent<GalleryImage, GalleryImage>)query.Limit(limit.Value);
+        var results = limit.HasValue
+            ? await query.Limit(limit.Value).ToListAsync()
+            : await query.ToListAsync();
 
-        return Ok(await query.ToListAsync());
+        return Ok(results);
     }
 
     [HttpPost("images")]
