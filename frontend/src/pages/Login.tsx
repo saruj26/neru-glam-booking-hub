@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
+import { authApi } from '@/lib/apiService';
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/use-toast";
@@ -34,40 +35,19 @@ const Login = () => {
     defaultValues: { email: '', password: '' },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: z.infer<typeof formSchema>) {
     setLoading(true);
-    setTimeout(() => {
-      try {
-        const customers: { email: string; password: string; name: string; phone: string; address: string; memberSince: string; level: string; points: number; pointsForNext: number; nextLevel: string }[] =
-          JSON.parse(localStorage.getItem('neru-customers') || '[]');
-        const found = customers.find(c => c.email === values.email && c.password === values.password);
-        if (found) {
-          const authData = {
-            name:          found.name,
-            email:         found.email,
-            phone:         found.phone         || '',
-            address:       found.address       || '',
-            memberSince:   found.memberSince   || 'Recently',
-            level:         found.level         || 'Silver',
-            points:        found.points        ?? 0,
-            pointsForNext: found.pointsForNext ?? 500,
-            nextLevel:     found.nextLevel     || 'Gold',
-          };
-          localStorage.setItem('neru-customer-auth', JSON.stringify(authData));
-          toast({ title: `Welcome back, ${found.name}!`, description: 'Redirecting to your dashboard…' });
-          navigate('/dashboard');
-        } else {
-          toast({
-            title: 'Invalid credentials',
-            description: 'Email or password is incorrect. Please try again.',
-            variant: 'destructive',
-          });
-        }
-      } catch {
-        toast({ title: 'Error', description: 'Something went wrong. Please try again.', variant: 'destructive' });
-      }
+    try {
+      const data = await authApi.login(values.email, values.password);
+      localStorage.setItem('neru-customer-auth', JSON.stringify(data));
+      toast({ title: `Welcome back, ${data.name}!`, description: 'Redirecting to your dashboard…' });
+      navigate('/dashboard');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Something went wrong. Please try again.';
+      toast({ title: 'Login failed', description: message, variant: 'destructive' });
+    } finally {
       setLoading(false);
-    }, 900);
+    }
   }
 
   return (

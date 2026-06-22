@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
+import { authApi } from '@/lib/apiService';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -31,18 +32,19 @@ const AdminLogin = () => {
     defaultValues: { username: "", password: "" },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-    setTimeout(() => {
-      if (values.username === 'admin' && values.password === 'admin123') {
-        localStorage.setItem('neru-admin-auth', 'true');
-        toast({ title: "Welcome back!", description: "Redirecting to your dashboard…" });
-        navigate('/admin/dashboard');
-      } else {
-        toast({ title: "Access denied", description: "Invalid username or password.", variant: "destructive" });
-      }
+    try {
+      const data = await authApi.adminLogin(values.username, values.password);
+      localStorage.setItem('neru-admin-auth', JSON.stringify(data));
+      toast({ title: "Welcome back!", description: "Redirecting to your dashboard…" });
+      navigate('/admin/dashboard');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Invalid username or password.';
+      toast({ title: "Access denied", description: message, variant: "destructive" });
+    } finally {
       setIsLoading(false);
-    }, 800);
+    }
   }
 
   return (

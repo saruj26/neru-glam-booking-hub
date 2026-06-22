@@ -1,6 +1,8 @@
+import { bookingsApi, offersApi, paymentApi } from './apiService';
+
 /* ─── Types ────────────────────────────────────────────────────────────── */
 export interface PaymentConfig {
-  advancePercent: number;    // 0–100
+  advancePercent: number;
   onlineEnabled: boolean;
   cashEnabled: boolean;
 }
@@ -11,8 +13,8 @@ export interface Offer {
   description: string;
   discountType: 'percentage' | 'fixed';
   discountValue: number;
-  applicableServices: string[];   // ['all'] or specific category keys
-  startDate: string;              // YYYY-MM-DD
+  applicableServices: string[];
+  startDate: string;
   endDate: string;
   active: boolean;
   code?: string;
@@ -115,20 +117,71 @@ const SEED_OFFERS: Offer[] = [
     active: true,
     code: 'BDAY500',
   },
-  {
-    id: 'OFF-003',
-    name: 'Festival Season Offer',
-    description: '15% off on all services — festival special!',
-    discountType: 'percentage',
-    discountValue: 15,
-    applicableServices: ['all'],
-    startDate: '2026-05-01',
-    endDate: '2026-06-30',
-    active: false,
-  },
 ];
 
-/* ─── Storage helpers ───────────────────────────────────────────────────── */
+/* ─── API-backed storage helpers ─────────────────────────────────────────── */
+
+export async function getPaymentConfigAsync(): Promise<PaymentConfig> {
+  try {
+    return await paymentApi.getConfig();
+  } catch {
+    return { ...DEFAULT_PAYMENT_CONFIG };
+  }
+}
+
+export async function savePaymentConfigAsync(cfg: PaymentConfig): Promise<void> {
+  await paymentApi.updateConfig(cfg);
+}
+
+export async function getOffersAsync(): Promise<Offer[]> {
+  try {
+    const offers = await offersApi.getAll();
+    if (offers.length === 0) {
+      await offersApi.bulkUpdate(SEED_OFFERS);
+      return SEED_OFFERS;
+    }
+    return offers;
+  } catch {
+    return SEED_OFFERS;
+  }
+}
+
+export async function saveOffersAsync(offers: Offer[]): Promise<void> {
+  await offersApi.bulkUpdate(offers);
+}
+
+export async function getBookingsAsync(): Promise<StoredBooking[]> {
+  try {
+    return await bookingsApi.getAll();
+  } catch {
+    return [];
+  }
+}
+
+export async function getBookingsByCustomerAsync(email: string): Promise<StoredBooking[]> {
+  try {
+    return await bookingsApi.getByCustomer(email);
+  } catch {
+    return [];
+  }
+}
+
+export async function upsertBookingAsync(booking: StoredBooking): Promise<StoredBooking> {
+  return bookingsApi.create(booking);
+}
+
+export async function generateBookingIdAsync(): Promise<string> {
+  const yr = new Date().getFullYear();
+  try {
+    const all = await bookingsApi.getAll();
+    const n = String(all.length + 1).padStart(3, '0');
+    return `NB-${yr}-${n}`;
+  } catch {
+    return `NB-${yr}-${String(Math.floor(Math.random() * 999) + 1).padStart(3, '0')}`;
+  }
+}
+
+/* ─── Synchronous localStorage fallbacks (kept for backward compat) ─────── */
 export function getPaymentConfig(): PaymentConfig {
   try {
     const raw = localStorage.getItem('neru-payment-config');
@@ -139,6 +192,7 @@ export function getPaymentConfig(): PaymentConfig {
 
 export function savePaymentConfig(cfg: PaymentConfig): void {
   localStorage.setItem('neru-payment-config', JSON.stringify(cfg));
+  savePaymentConfigAsync(cfg).catch(() => {/* */});
 }
 
 export function getOffers(): Offer[] {
@@ -152,6 +206,7 @@ export function getOffers(): Offer[] {
 
 export function saveOffers(offers: Offer[]): void {
   localStorage.setItem('neru-offers', JSON.stringify(offers));
+  saveOffersAsync(offers).catch(() => {/* */});
 }
 
 export function getBookings(): StoredBooking[] {
@@ -168,6 +223,7 @@ export function upsertBooking(booking: StoredBooking): void {
   if (idx >= 0) all[idx] = booking;
   else all.unshift(booking);
   localStorage.setItem('neru-bookings', JSON.stringify(all));
+  upsertBookingAsync(booking).catch(() => {/* */});
 }
 
 export function generateBookingId(): string {
@@ -176,7 +232,7 @@ export function generateBookingId(): string {
   return `NB-${yr}-${n}`;
 }
 
-/* ─── Offer helpers ─────────────────────────────────────────────────────── */
+/* ─── Active offer helpers ───────────────────────────────────────────────── */
 export function getActiveOffersForCategory(category: string): Offer[] {
   const today = new Date().toISOString().split('T')[0];
   return getOffers().filter(
@@ -186,6 +242,14 @@ export function getActiveOffersForCategory(category: string): Offer[] {
       o.endDate >= today &&
       (o.applicableServices.includes('all') || o.applicableServices.includes(category)),
   );
+}
+
+export async function getActiveOffersForCategoryAsync(category: string): Promise<Offer[]> {
+  try {
+    return await offersApi.getForCategory(category);
+  } catch {
+    return getActiveOffersForCategory(category);
+  }
 }
 
 export function getBestOffer(category: string): Offer | null {
@@ -198,7 +262,7 @@ export function getBestOffer(category: string): Offer | null {
   });
 }
 
-/* ─── Pricing calculator ────────────────────────────────────────────────── */
+/* ─── Pricing calculator ─────────────────────────────────────────────────── */
 export function calculateDiscount(price: number, offer: Offer): number {
   if (offer.discountType === 'percentage')
     return Math.round((price * offer.discountValue) / 100);

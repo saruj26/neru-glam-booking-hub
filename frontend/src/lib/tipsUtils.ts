@@ -1,13 +1,15 @@
+import { beautyTipsApi } from './apiService';
+
 export interface BeautyTip {
   id: string;
   title: string;
   excerpt: string;
-  content: string;        // body stored as plain text / line-break sections
+  content: string;
   category: string;
   coverImage: string;
   tags: string[];
   author: string;
-  readTime: number;       // minutes
+  readTime: number;
   featured: boolean;
   active: boolean;
   createdAt: string;
@@ -52,8 +54,8 @@ const SEEDS: BeautyTip[] = [
   {
     id: 'tip-3',
     title: 'The Secret to Perfect Smoky Eyes — Step by Step',
-    excerpt: 'Smoky eyes don\'t have to be intimidating. Follow our professional step-by-step guide to achieve a flawless, blended smoky eye every time.',
-    content: `The smoky eye is one of the most iconic looks in makeup — dramatic, sensual, and endlessly versatile. Here is how our artists create it.\n\n**Tools You Need**\nFlat eyeshadow brush, blending brush, pencil brush, black or dark eyeshadow, transition shade (medium brown), base shade (cream or light beige), kohl pencil or gel liner, mascara.\n\n**Step 1 — Prime the Lid**\nApply an eyeshadow primer or concealer over the entire eyelid. This prevents creasing and makes colours more vibrant.\n\n**Step 2 — Apply the Transition Shade**\nUsing a fluffy blending brush, apply a medium brown shadow in the crease using windshield-wiper motions. This creates a natural transition between colours and prevents hard edges.\n\n**Step 3 — Pack the Dark Shade**\nUsing a flat brush, press a deep charcoal or black shadow onto the outer two-thirds of the lid. Don't blend yet — just pack the colour densely.\n\n**Step 4 — Blend, Blend, Blend**\nWith a clean blending brush, soften all harsh edges. The key to a professional smoky eye is seamless blending. Spend at least 2–3 minutes here.\n\n**Step 5 — Line the Waterline**\nApply a creamy black kohl pencil or gel liner to your upper and lower waterline. This deepens the eye and adds intensity.\n\n**Step 6 — Highlight the Inner Corner**\nDab a shimmery champagne or gold shadow on the inner corners of the eyes. This opens them up and adds dimension.\n\n**Step 7 — Finish with Mascara**\nApply 2–3 coats of volumising mascara. For maximum drama, add false lashes.\n\n**Remember:** A strong eye calls for a minimal lip. Try a nude or soft pink lip to let your eyes shine.`,
+    excerpt: "Smoky eyes don't have to be intimidating. Follow our professional step-by-step guide to achieve a flawless, blended smoky eye every time.",
+    content: `The smoky eye is one of the most iconic looks in makeup — dramatic, sensual, and endlessly versatile. Here is how our artists create it.\n\n**Tools You Need**\nFlat eyeshadow brush, blending brush, pencil brush, black or dark eyeshadow, transition shade (medium brown), base shade (cream or light beige), kohl pencil or gel liner, mascara.\n\n**Step 1 — Prime the Lid**\nApply an eyeshadow primer or concealer over the entire eyelid.\n\n**Step 2 — Apply the Transition Shade**\nUsing a fluffy blending brush, apply a medium brown shadow in the crease using windshield-wiper motions.\n\n**Step 3 — Pack the Dark Shade**\nUsing a flat brush, press a deep charcoal or black shadow onto the outer two-thirds of the lid.\n\n**Step 4 — Blend, Blend, Blend**\nWith a clean blending brush, soften all harsh edges. Spend at least 2–3 minutes here.\n\n**Step 5 — Line the Waterline**\nApply a creamy black kohl pencil or gel liner to your upper and lower waterline.\n\n**Step 6 — Highlight the Inner Corner**\nDab a shimmery champagne or gold shadow on the inner corners of the eyes.\n\n**Step 7 — Finish with Mascara**\nApply 2–3 coats of volumising mascara.\n\n**Remember:** A strong eye calls for a minimal lip.`,
     category: 'Eye Makeup',
     coverImage: 'https://images.unsplash.com/photo-1616683693504-3ea7e9ad6fec?auto=format&fit=crop&w=800&q=80',
     tags: ['Smoky Eye', 'Eye Makeup', 'Eyeshadow', 'Blending'],
@@ -67,7 +69,7 @@ const SEEDS: BeautyTip[] = [
     id: 'tip-4',
     title: 'How to Choose the Right Lipstick Shade for Your Skin Tone',
     excerpt: 'Finding your perfect lipstick shade can transform your entire look. Learn how to match lip colour to your unique skin tone like a pro.',
-    content: `Lipstick is often the finishing touch that ties an entire look together. But with thousands of shades available, choosing the right one can feel overwhelming. Here is our guide.\n\n**Understanding Undertones First**\nBefore choosing a shade, identify your skin's undertone — warm (yellow/golden), cool (pink/blue), or neutral (a mix of both).\n\n**For Fair Skin**\n- Warm undertone: Peachy nudes, coral, and warm rose shades look beautiful.\n- Cool undertone: Baby pink, rosy red, and berry tones are most flattering.\n- Avoid: Very dark shades can be overpowering; opt for lighter, brighter tones.\n\n**For Medium Skin**\n- Warm undertone: Terracotta, burnt sienna, warm reds, and caramel browns are stunning.\n- Cool undertone: Mauve, fuchsia, magenta, and cool-toned reds enhance your complexion.\n- Medium skin tones are the most versatile — most shades work beautifully!\n\n**For Deep Skin**\n- Warm undertone: Rich chocolate browns, golden nudes, and warm brick reds are gorgeous.\n- Cool undertone: Deep plums, wine, and classic blue-reds are showstopping.\n- Avoid: Very light, chalky nudes can look ashy on deeper skin tones.\n\n**Our Shade Recommendations**\nFor every day: A sheer, moisturising tint 1–2 shades darker than your natural lip colour.\nFor events: A full-coverage satin finish in a colour that contrasts beautifully with your outfit.\nFor bridal: Timeless red or a romantic rose — both photograph beautifully.\n\n**Pro Tip:** Always apply lip liner before lipstick. It prevents feathering, makes colour last longer, and gives you a more defined shape.`,
+    content: `Lipstick is often the finishing touch that ties an entire look together.\n\n**Understanding Undertones First**\nBefore choosing a shade, identify your skin's undertone — warm (yellow/golden), cool (pink/blue), or neutral.\n\n**For Fair Skin**\n- Warm undertone: Peachy nudes, coral, and warm rose shades.\n- Cool undertone: Baby pink, rosy red, and berry tones.\n\n**For Medium Skin**\n- Warm undertone: Terracotta, burnt sienna, warm reds, and caramel browns.\n- Cool undertone: Mauve, fuchsia, magenta, and cool-toned reds.\n\n**For Deep Skin**\n- Warm undertone: Rich chocolate browns, golden nudes, and warm brick reds.\n- Cool undertone: Deep plums, wine, and classic blue-reds.\n\n**Pro Tip:** Always apply lip liner before lipstick.`,
     category: 'Lip Care',
     coverImage: 'https://images.unsplash.com/photo-1602910344008-22f323cc1817?auto=format&fit=crop&w=800&q=80',
     tags: ['Lipstick', 'Lip Colour', 'Skin Tone', 'Makeup Tips'],
@@ -81,7 +83,7 @@ const SEEDS: BeautyTip[] = [
     id: 'tip-5',
     title: 'Festive Makeup Guide: Look Your Best for Every Celebration',
     excerpt: 'From Diwali to Eid to Christmas parties, here is your complete guide to creating stunning festive makeup looks for every celebration.',
-    content: `Festive seasons call for bolder, more dramatic makeup. Here is how to create the perfect celebratory look for any occasion.\n\n**The Festive Colour Palette**\nFestive makeup thrives on rich, jewel-toned colours. Think deep emeralds, sapphires, golds, and burgundies. These colours photograph beautifully and look stunning under event lighting.\n\n**Diwali Inspired Look**\nFor Diwali, lean into gold and bronze tones. A warm, shimmery bronze eyeshadow with gold eyeliner on the waterline is breathtaking. Pair with a deep wine or brick-red lip. Add gold bindis or eyeliner art on the temples for a traditional touch.\n\n**Eid Celebration Look**\nFor Eid, elegance is key. A soft, dewy base with defined brows, a subtle rose-gold eye, and a statement lip in deep rose or berry is perfect. Add a thin, precise liner wing for polish.\n\n**Christmas Party Look**\nFor Christmas parties, you can go bold. A classic red lip with a clean eye is timeless. Alternatively, a glittery silver or green eyeshadow with minimal lips is equally stunning.\n\n**Tips for All Festive Looks**\n- Skin must glow: Use a highlighter on the cheekbones, cupid's bow, and inner corners of the eyes.\n- Contouring is your friend: Define your cheekbones and slim your nose with a cool-toned contour powder.\n- Choose long-wear formulas: Festive events run long. Opt for transfer-proof and waterproof products.\n- Prep your lips: Exfoliate and moisturise your lips 30 minutes before applying colour.\n\n**Book a Festive Makeup Session**\nLet our expert artists create a custom festive look tailored to your outfit, skin tone, and personal style. Book your appointment today!`,
+    content: `Festive seasons call for bolder, more dramatic makeup.\n\n**The Festive Colour Palette**\nFestive makeup thrives on rich, jewel-toned colours. Think deep emeralds, sapphires, golds, and burgundies.\n\n**Diwali Inspired Look**\nLean into gold and bronze tones. A warm, shimmery bronze eyeshadow with gold eyeliner on the waterline is breathtaking.\n\n**Eid Celebration Look**\nElegance is key. A soft, dewy base with defined brows, a subtle rose-gold eye, and a statement lip in deep rose or berry.\n\n**Christmas Party Look**\nA classic red lip with a clean eye is timeless. Alternatively, a glittery silver or green eyeshadow.\n\n**Tips for All Festive Looks**\n- Skin must glow: Use a highlighter on the cheekbones.\n- Choose long-wear formulas.\n- Prep your lips: Exfoliate and moisturise before applying colour.`,
     category: 'Festive Looks',
     coverImage: 'https://images.unsplash.com/photo-1576426863848-c21f53c60b19?auto=format&fit=crop&w=800&q=80',
     tags: ['Festive', 'Diwali', 'Eid', 'Party Makeup', 'Gold'],
@@ -93,6 +95,51 @@ const SEEDS: BeautyTip[] = [
   },
 ];
 
+/* ═══ Async API helpers (primary) ════════════════════════════════════════ */
+
+export async function getTipsAsync(): Promise<BeautyTip[]> {
+  try {
+    const tips = await beautyTipsApi.getAll();
+    if (tips.length === 0) {
+      await beautyTipsApi.bulkUpdate(SEEDS);
+      return SEEDS;
+    }
+    return tips;
+  } catch {
+    return getTips();
+  }
+}
+
+export async function getActiveTipsAsync(): Promise<BeautyTip[]> {
+  try {
+    return await beautyTipsApi.getActive();
+  } catch {
+    return getActiveTips();
+  }
+}
+
+export async function getFeaturedTipsAsync(n = 3): Promise<BeautyTip[]> {
+  try {
+    return await beautyTipsApi.getFeatured(n);
+  } catch {
+    return getFeaturedTips(n);
+  }
+}
+
+export async function getTipByIdAsync(id: string): Promise<BeautyTip | null> {
+  try {
+    return await beautyTipsApi.getById(id);
+  } catch {
+    return getTipById(id);
+  }
+}
+
+export async function saveTipsAsync(tips: BeautyTip[]): Promise<void> {
+  await beautyTipsApi.bulkUpdate(tips);
+}
+
+/* ═══ Synchronous localStorage fallbacks ═════════════════════════════════ */
+
 function read(): BeautyTip[] {
   try {
     const raw = localStorage.getItem(KEY);
@@ -102,9 +149,12 @@ function read(): BeautyTip[] {
 }
 function write(tips: BeautyTip[]): void { localStorage.setItem(KEY, JSON.stringify(tips)); }
 
-export function getTips(): BeautyTip[]          { return read(); }
-export function saveTips(tips: BeautyTip[]): void { write(tips); }
-export function getActiveTips(): BeautyTip[]    { return read().filter(t => t.active); }
+export function getTips(): BeautyTip[]            { return read(); }
+export function saveTips(tips: BeautyTip[]): void {
+  write(tips);
+  saveTipsAsync(tips).catch(() => {/* */});
+}
+export function getActiveTips(): BeautyTip[]      { return read().filter(t => t.active); }
 export function getFeaturedTips(n = 3): BeautyTip[] { return getActiveTips().filter(t => t.featured).slice(0, n); }
 export function getTipById(id: string): BeautyTip | null {
   return read().find(t => t.id === id) ?? null;

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
+import { authApi } from '@/lib/apiService';
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/use-toast";
@@ -67,39 +68,22 @@ const Register = () => {
   const watchedPwd = form.watch('password');
   const strength   = getStrength(watchedPwd);
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: z.infer<typeof formSchema>) {
     setLoading(true);
-    setTimeout(() => {
-      try {
-        const customers: { email: string }[] = JSON.parse(localStorage.getItem('neru-customers') || '[]');
-        if (customers.find(c => c.email === values.email)) {
-          toast({
-            title: 'Email already registered',
-            description: 'An account with this email exists. Please sign in instead.',
-            variant: 'destructive',
-          });
-          setLoading(false);
-          return;
-        }
-        const memberSince = new Date().toLocaleString('en-IN', { month: 'long', year: 'numeric' });
-        const newCustomer = {
-          name: values.name, email: values.email, phone: values.phone,
-          address: values.address || '', password: values.password,
-          memberSince, level: 'Silver', points: 0, pointsForNext: 500, nextLevel: 'Gold',
-        };
-        customers.push(newCustomer);
-        localStorage.setItem('neru-customers', JSON.stringify(customers));
-
-        const { password: _p, ...authData } = newCustomer;
-        localStorage.setItem('neru-customer-auth', JSON.stringify(authData));
-
-        toast({ title: `Welcome to Neru Beauty, ${values.name}!`, description: 'Account created! Redirecting to your dashboard…' });
-        navigate('/dashboard');
-      } catch {
-        toast({ title: 'Error', description: 'Something went wrong. Please try again.', variant: 'destructive' });
-      }
+    try {
+      const data = await authApi.register(
+        values.name, values.email, values.password,
+        values.phone, values.address ?? '',
+      );
+      localStorage.setItem('neru-customer-auth', JSON.stringify(data));
+      toast({ title: `Welcome to Neru Beauty, ${data.name}!`, description: 'Account created! Redirecting to your dashboard…' });
+      navigate('/dashboard');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Something went wrong. Please try again.';
+      toast({ title: 'Registration failed', description: message, variant: 'destructive' });
+    } finally {
       setLoading(false);
-    }, 900);
+    }
   }
 
   return (
