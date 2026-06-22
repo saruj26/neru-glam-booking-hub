@@ -7,8 +7,9 @@ import {
   X, Save, CalendarDays, Percent, IndianRupee, CheckCircle,
 } from 'lucide-react';
 import {
-  getOffers, saveOffers, type Offer,
+  type Offer,
 } from '@/lib/paymentUtils';
+import { offersApi } from '@/lib/apiService';
 
 /* ─── Helpers ───────────────────────────────────────────────────────────── */
 const SERVICE_OPTIONS = [
@@ -233,34 +234,38 @@ export default function AdminOffers() {
 
   useEffect(() => {
     if (!localStorage.getItem('neru-admin-auth')) navigate('/admin');
-    setOffers(getOffers());
+    offersApi.getAll().then(setOffers).catch(() => {});
   }, [navigate]);
-
-  const persist = (updated: Offer[]) => { setOffers(updated); saveOffers(updated); };
 
   const handleSave = (form: Partial<Offer>) => {
     if (form.id) {
-      persist(offers.map(o => o.id === form.id ? { ...o, ...form } as Offer : o));
-      toast({ title: 'Offer Updated', description: `"${form.name}" has been updated.` });
+      const updated = { ...offers.find(o => o.id === form.id)!, ...form } as Offer;
+      offersApi.update(form.id, updated)
+        .then(o => { setOffers(prev => prev.map(x => x.id === form.id ? o : x)); toast({ title: 'Offer Updated', description: `"${form.name}" has been updated.` }); })
+        .catch(() => toast({ title: 'Update failed', variant: 'destructive' }));
     } else {
-      const newO: Offer = {
-        ...(form as Omit<Offer, 'id'>),
-        id: `OFF-${Date.now()}`,
-      };
-      persist([newO, ...offers]);
-      toast({ title: 'Offer Created', description: `"${newO.name}" is now active.` });
+      const newO: Offer = { ...(form as Omit<Offer, 'id'>), id: `OFF-${Date.now()}` };
+      offersApi.create(newO)
+        .then(o => { setOffers(prev => [o, ...prev]); toast({ title: 'Offer Created', description: `"${newO.name}" is now active.` }); })
+        .catch(() => toast({ title: 'Create failed', variant: 'destructive' }));
     }
     setDialogOffer(undefined);
   };
 
   const handleDelete = (id: string) => {
     if (!confirm('Delete this offer?')) return;
-    persist(offers.filter(o => o.id !== id));
-    toast({ title: 'Offer Deleted' });
+    offersApi.delete(id)
+      .then(() => { setOffers(prev => prev.filter(o => o.id !== id)); toast({ title: 'Offer Deleted' }); })
+      .catch(() => toast({ title: 'Delete failed', variant: 'destructive' }));
   };
 
   const handleToggle = (id: string) => {
-    persist(offers.map(o => o.id === id ? { ...o, active: !o.active } : o));
+    const offer = offers.find(o => o.id === id);
+    if (!offer) return;
+    const updated = { ...offer, active: !offer.active };
+    offersApi.update(id, updated)
+      .then(o => setOffers(prev => prev.map(x => x.id === id ? o : x)))
+      .catch(() => {});
   };
 
   const filtered = offers.filter(o =>

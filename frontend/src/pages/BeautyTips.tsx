@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { Clock, ArrowRight, Sparkles, Search, Lightbulb, BookOpen, Star } from 'lucide-react';
-import { getActiveTips, getFeaturedTips, TIP_CATEGORIES, formatDate, type BeautyTip } from '@/lib/tipsUtils';
+import { getActiveTipsAsync, getFeaturedTipsAsync, TIP_CATEGORIES, formatDate, type BeautyTip } from '@/lib/tipsUtils';
 
 /* ── Category pill colours ───────────────────────────────────── */
 const CAT_COLORS: Record<string, { bg: string; text: string }> = {
@@ -29,7 +29,7 @@ const SectionBadge = ({ text }: { text: string }) => (
 function TipCard({ tip }: { tip: BeautyTip }) {
   const cs = catStyle(tip.category);
   return (
-    <Link to={`/beauty-tips/${tip.id}`}
+    <Link to={`/beauty-tips/${tip.tipId || tip.id}`}
       className="group bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 overflow-hidden flex flex-col">
       {/* Cover */}
       <div className="relative h-48 overflow-hidden bg-gradient-to-br from-purple-50 to-pink-50 flex-shrink-0">
@@ -85,7 +85,7 @@ function TipCard({ tip }: { tip: BeautyTip }) {
 function FeaturedCard({ tip }: { tip: BeautyTip }) {
   const cs = catStyle(tip.category);
   return (
-    <Link to={`/beauty-tips/${tip.id}`}
+    <Link to={`/beauty-tips/${tip.tipId || tip.id}`}
       className="group relative rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col min-h-[380px]">
       {tip.coverImage
         ? <img src={tip.coverImage} alt={tip.title} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
@@ -125,8 +125,8 @@ export default function BeautyTips() {
   const [search, setSearch]     = useState('');
 
   useEffect(() => {
-    setAllTips(getActiveTips());
-    setFeatured(getFeaturedTips(3));
+    getActiveTipsAsync().then(setAllTips).catch(() => {});
+    getFeaturedTipsAsync(3).then(setFeatured).catch(() => {});
   }, []);
 
   const filtered = allTips

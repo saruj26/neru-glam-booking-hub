@@ -10,7 +10,9 @@ import {
   Lightbulb,
 } from 'lucide-react';
 import type { ServiceData } from '@/components/admin/ServiceForm';
-import { getActiveTips, getFeaturedTips, formatDate, type BeautyTip } from '@/lib/tipsUtils';
+import { getActiveTipsAsync, formatDate, type BeautyTip } from '@/lib/tipsUtils';
+import { bookingsApi } from '@/lib/apiService';
+import type { StoredBooking } from '@/lib/paymentUtils';
 
 /* ─── Service seed (fallback when admin page not yet visited) ────── */
 const SVC_SEED: ServiceData[] = [
@@ -261,9 +263,18 @@ const CustomerDashboard = () => {
   const [featTips,    setFeatTips]    = useState<BeautyTip[]>([]);
 
   useEffect(() => {
-    setTipsList(getActiveTips());
-    setFeatTips(getFeaturedTips(3));
+    getActiveTipsAsync()
+      .then(tips => { setTipsList(tips); setFeatTips(tips.filter(t => t.featured).slice(0, 3)); })
+      .catch(() => {});
   }, []);
+
+  /* ── Real bookings from backend ── */
+  const [realBookings, setRealBookings] = useState<StoredBooking[]>([]);
+  useEffect(() => {
+    if (currentUser.email) {
+      bookingsApi.getByCustomer(currentUser.email).then(setRealBookings).catch(() => {});
+    }
+  }, [currentUser.email]);
 
   /* ── Notifications ── */
   const [readIds, setReadIds] = useState<number[]>([3, 4, 5]);
@@ -308,16 +319,20 @@ const CustomerDashboard = () => {
   const unread = NOTIFS.filter(n => !readIds.includes(n.id)).length;
 
   const filteredBookings = useMemo(() => {
-    let b = BOOKINGS;
-    if (bTab === 'active')    b = b.filter(x => ['Confirmed', 'Upcoming', 'Pending'].includes(x.status));
-    if (bTab === 'completed') b = b.filter(x => x.status === 'Completed');
-    if (bTab === 'cancelled') b = b.filter(x => x.status === 'Cancelled');
-    if (bSearch) b = b.filter(x => x.service.toLowerCase().includes(bSearch.toLowerCase()) || x.id.toLowerCase().includes(bSearch.toLowerCase()));
+    let b = realBookings;
+    if (bTab === 'active')    b = b.filter(x => ['confirmed','pending_payment','partially_paid'].includes(x.status));
+    if (bTab === 'completed') b = b.filter(x => x.status === 'completed');
+    if (bTab === 'cancelled') b = b.filter(x => x.status === 'cancelled');
+    if (bSearch) b = b.filter(x =>
+      x.service.name.toLowerCase().includes(bSearch.toLowerCase()) ||
+      (x.id ?? '').toLowerCase().includes(bSearch.toLowerCase()) ||
+      x.bookingId.toLowerCase().includes(bSearch.toLowerCase())
+    );
     return b;
-  }, [bSearch, bTab]);
+  }, [bSearch, bTab, realBookings]);
 
-  const activeBookings  = BOOKINGS.filter(b => ['Confirmed', 'Upcoming', 'Pending'].includes(b.status));
-  const completedCount  = BOOKINGS.filter(b => b.status === 'Completed').length;
+  const activeBookings = realBookings.filter(b => ['confirmed','pending_payment','partially_paid'].includes(b.status));
+  const completedCount = realBookings.filter(b => b.status === 'completed').length;
 
   const nav = (id: string) => { setSection(id); setMenuOpen(false); };
 
@@ -447,7 +462,7 @@ const CustomerDashboard = () => {
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Total Bookings',     value: BOOKINGS.length,       sub: 'All time',            icon: CalendarCheck, grad: 'linear-gradient(135deg,#4C1D95,#7C3AED)' },
+          { label: 'Total Bookings',     value: realBookings.length,   sub: 'All time',            icon: CalendarCheck, grad: 'linear-gradient(135deg,#4C1D95,#7C3AED)' },
           { label: 'Active Bookings',    value: activeBookings.length, sub: 'Pending / Upcoming',  icon: Clock,         grad: 'linear-gradient(135deg,#B45309,#D97706)' },
           { label: 'Completed Services', value: completedCount,        sub: 'Successfully done',   icon: CheckCircle,   grad: 'linear-gradient(135deg,#065F46,#059669)' },
           { label: 'Active Offers',      value: OFFERS.length,         sub: 'Claim before expiry', icon: Gift,          grad: 'linear-gradient(135deg,#BE185D,#EC4899)' },
@@ -478,18 +493,17 @@ const CustomerDashboard = () => {
         ) : (
           <div className="grid sm:grid-cols-2 gap-4">
             {activeBookings.slice(0, 2).map(b => (
-              <div key={b.id} className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+              <div key={b.id ?? b.bookingId} className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
                 <div className="flex items-start justify-between mb-3">
                   <div>
-                    <p className="font-bold text-neru-darkGray text-sm">{b.service}</p>
-                    <p className="text-gray-400 text-xs mt-0.5">#{b.id}</p>
+                    <p className="font-bold text-neru-darkGray text-sm">{b.service.name}</p>
+                    <p className="text-gray-400 text-xs mt-0.5">#{b.bookingId}</p>
                   </div>
                   <StatusBadge status={b.status} />
                 </div>
                 <div className="space-y-1.5 text-xs text-gray-500">
-                  <div className="flex items-center gap-2"><Calendar size={12} className="text-neru-purple" />{b.appointmentDate} · {b.time}</div>
-                  {b.beautician && <div className="flex items-center gap-2"><User size={12} className="text-neru-purple" />{b.beautician}</div>}
-                  <div className="flex items-center gap-2"><Tag size={12} className="text-neru-purple" />₹{b.amount.toLocaleString()}</div>
+                  <div className="flex items-center gap-2"><Calendar size={12} className="text-neru-purple" />{b.date} · {b.time}</div>
+                  <div className="flex items-center gap-2"><Tag size={12} className="text-neru-purple" />₹{b.pricing.finalPrice.toLocaleString()}</div>
                 </div>
               </div>
             ))}
@@ -515,15 +529,17 @@ const CustomerDashboard = () => {
                 </tr>
               </thead>
               <tbody>
-                {BOOKINGS.slice(0, 4).map((b, i) => (
-                  <tr key={b.id} className={`hover:bg-gray-50 transition-colors ${i < 3 ? 'border-b border-gray-50' : ''}`}>
+                {realBookings.length === 0 ? (
+                  <tr><td colSpan={4} className="px-5 py-8 text-center text-gray-400 text-sm">No bookings yet. <Link to="/booking" className="text-neru-purple font-semibold hover:underline">Book your first appointment →</Link></td></tr>
+                ) : realBookings.slice(0, 4).map((b, i) => (
+                  <tr key={b.id ?? b.bookingId} className={`hover:bg-gray-50 transition-colors ${i < 3 ? 'border-b border-gray-50' : ''}`}>
                     <td className="px-5 py-4">
-                      <p className="font-semibold text-neru-darkGray text-xs">{b.service}</p>
-                      <p className="text-gray-400 text-[10px] mt-0.5">#{b.id}</p>
+                      <p className="font-semibold text-neru-darkGray text-xs">{b.service.name}</p>
+                      <p className="text-gray-400 text-[10px] mt-0.5">#{b.bookingId}</p>
                     </td>
-                    <td className="px-5 py-4 text-gray-500 text-xs hidden sm:table-cell">{b.appointmentDate}</td>
-                    <td className="px-5 py-4"><StatusBadge status={b.status} /></td>
-                    <td className="px-5 py-4 text-right text-xs font-semibold text-neru-darkGray hidden md:table-cell">₹{b.amount.toLocaleString()}</td>
+                    <td className="px-5 py-4 text-gray-500 text-xs hidden sm:table-cell">{b.date}</td>
+                    <td className="px-5 py-4"><StatusBadge status={b.status as Status} /></td>
+                    <td className="px-5 py-4 text-right text-xs font-semibold text-neru-darkGray hidden md:table-cell">₹{b.pricing.finalPrice.toLocaleString()}</td>
                   </tr>
                 ))}
               </tbody>
@@ -591,25 +607,25 @@ const CustomerDashboard = () => {
       ) : (
         <div className="space-y-3">
           {filteredBookings.map(b => (
-            <div key={b.id} className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+            <div key={b.id ?? b.bookingId} className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-2 mb-1">
-                    <h4 className="font-bold text-neru-darkGray">{b.service}</h4>
+                    <h4 className="font-bold text-neru-darkGray">{b.service.name}</h4>
                     <StatusBadge status={b.status} />
                   </div>
-                  <p className="text-gray-400 text-xs mb-3">Booking ID: {b.id}</p>
+                  <p className="text-gray-400 text-xs mb-3">Booking ID: {b.bookingId}</p>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-1.5 text-xs text-gray-500">
-                    <div className="flex items-center gap-1.5"><Calendar size={11} className="text-neru-purple" /><span>Booked: {b.bookingDate}</span></div>
-                    <div className="flex items-center gap-1.5"><CalendarCheck size={11} className="text-neru-purple" /><span>Appt: {b.appointmentDate}</span></div>
+                    <div className="flex items-center gap-1.5"><Calendar size={11} className="text-neru-purple" /><span>Booked: {b.createdAt ? new Date(b.createdAt).toLocaleDateString('en-IN') : ''}</span></div>
+                    <div className="flex items-center gap-1.5"><CalendarCheck size={11} className="text-neru-purple" /><span>Appt: {b.date}</span></div>
                     <div className="flex items-center gap-1.5"><Clock size={11} className="text-neru-purple" /><span>{b.time}</span></div>
-                    <div className="flex items-center gap-1.5"><User size={11} className="text-neru-purple" /><span>{b.beautician ?? 'TBA'}</span></div>
+                    <div className="flex items-center gap-1.5"><User size={11} className="text-neru-purple" /><span>TBA</span></div>
                   </div>
                 </div>
                 <div className="flex sm:flex-col items-center sm:items-end gap-3 flex-shrink-0">
-                  <p className="text-lg font-extrabold text-neru-darkGray">₹{b.amount.toLocaleString()}</p>
+                  <p className="text-lg font-extrabold text-neru-darkGray">₹{b.pricing.finalPrice.toLocaleString()}</p>
                   <div className="flex gap-2">
-                    <button onClick={() => toast({ title: 'Booking Details', description: `${b.service} on ${b.appointmentDate} at ${b.time}. Amount: ₹${b.amount.toLocaleString()}` })}
+                    <button onClick={() => toast({ title: 'Booking Details', description: `${b.service.name} on ${b.date} at ${b.time}. Amount: ₹${b.pricing.finalPrice.toLocaleString()}` })}
                       className="px-3 py-1.5 rounded-lg text-xs font-semibold text-neru-purple bg-neru-purple/8 hover:bg-neru-purple/15 transition-colors">
                       View Details
                     </button>

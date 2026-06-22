@@ -23,10 +23,10 @@ import { toast } from '@/components/ui/use-toast';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import {
-  getPaymentConfig, getBestOffer, getServicePrice, calculatePricing,
-  generateBookingId, upsertBooking, fmt,
+  getServicePrice, calculatePricing, fmt,
   type PricingBreakdown, type Offer,
 } from '@/lib/paymentUtils';
+import { paymentApi, offersApi, bookingsApi } from '@/lib/apiService';
 
 /* ─── Schema ────────────────────────────────────────────────────────────── */
 const formSchema = z.object({
@@ -332,14 +332,16 @@ const Booking = () => {
   const [paymentMethod,   setPaymentMethod]   = useState<'online' | 'cash'>('online');
   const [pricing,         setPricing]         = useState<PricingBreakdown | null>(null);
   const [activeoffer,     setActiveOffer]      = useState<Offer | null>(null);
-  const [payConfig,       setPayConfig]        = useState(getPaymentConfig());
+  const [payConfig,       setPayConfig]        = useState({ advancePercent: 10, onlineEnabled: true, cashEnabled: true });
   const [confirmedId,     setConfirmedId]      = useState<string | null>(null);
   const [submitting,       setSubmitting]       = useState(false);
   const [preSelectedName,  setPreSelectedName]  = useState<string | null>(null);
   const [preSelectedPrice, setPreSelectedPrice] = useState<number | null>(null);
 
-  /* Load payment config */
-  useEffect(() => { setPayConfig(getPaymentConfig()); }, []);
+  /* Load payment config from backend */
+  useEffect(() => {
+    paymentApi.getConfig().then(setPayConfig).catch(() => {});
+  }, []);
 
   /* Pre-fill from URL params (?category=wedding&serviceType=...&price=12000) */
   useEffect(() => {
@@ -363,11 +365,23 @@ const Booking = () => {
   /* Recalculate pricing when category or type changes */
   useEffect(() => {
     if (!serviceCategory || !serviceType) { setPricing(null); return; }
-    // Use the real service price from URL if available, otherwise fall back to catalog
     const price = preSelectedPrice ?? getServicePrice(serviceCategory, serviceType);
-    const offer = getBestOffer(serviceCategory);
-    setActiveOffer(offer);
-    setPricing(calculatePricing(price, offer, payConfig.advancePercent));
+    offersApi.getForCategory(serviceCategory)
+      .then(offers => {
+        const today = new Date().toISOString().split('T')[0];
+        const active = offers.filter(o => o.active && o.startDate <= today && o.endDate >= today);
+        const best = active.length
+          ? active.reduce((b, c) => {
+              const score = (o: Offer) => o.discountType === 'percentage' ? o.discountValue * 100 : o.discountValue;
+              return score(c) > score(b) ? c : b;
+            })
+          : null;
+        setActiveOffer(best);
+        setPricing(calculatePricing(price, best, payConfig.advancePercent));
+      })
+      .catch(() => {
+        setPricing(calculatePricing(price, null, payConfig.advancePercent));
+      });
   }, [serviceCategory, serviceType, payConfig.advancePercent, preSelectedPrice]);
 
   /* Default payment method to first available */
@@ -381,29 +395,18 @@ const Booking = () => {
     defaultValues: { name: '', email: '', phone: '', specialRequests: '' },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!pricing) return;
     setSubmitting(true);
-
-    setTimeout(() => {
-      const bookingId = generateBookingId();
+    try {
       const isCash = paymentMethod === 'cash';
       const isFullOnline = paymentMethod === 'online' && pricing.advancePercent === 100;
+      const status = isCash || pricing.advancePercent === 0 ? 'confirmed' : 'partially_paid';
 
-      const status = isCash
-        ? 'confirmed'
-        : pricing.advancePercent === 0
-          ? 'confirmed'
-          : 'partially_paid';
-
-      upsertBooking({
-        id: bookingId,
+      const booking = await bookingsApi.create({
+        bookingId: '',
         customer: { name: values.name, email: values.email, phone: values.phone },
-        service: {
-          name: values.serviceType,
-          category: values.serviceCategory,
-          type: values.serviceType,
-        },
+        service: { name: values.serviceType, category: values.serviceCategory, type: values.serviceType },
         date: format(values.date, 'yyyy-MM-dd'),
         time: values.time,
         specialRequests: values.specialRequests ?? '',
@@ -415,13 +418,16 @@ const Booking = () => {
           remainingAmount: isCash ? pricing.finalPrice : pricing.remainingAmount,
           transactionId: paymentMethod === 'online' ? `TXN-${Date.now()}` : undefined,
         },
-        createdAt: new Date().toISOString(),
         status: isCash ? 'confirmed' : status,
       });
 
+      setConfirmedId(booking.id ?? booking.bookingId);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Booking failed. Please try again.';
+      toast({ title: 'Booking Error', description: msg, variant: 'destructive' });
+    } finally {
       setSubmitting(false);
-      setConfirmedId(bookingId);
-    }, 1200);
+    }
   }
 
   return (

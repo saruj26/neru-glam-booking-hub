@@ -6,7 +6,7 @@ import {
   Clock, ArrowLeft, ArrowRight, Sparkles, Calendar, User,
   Tag, Lightbulb, Share2, ChevronRight,
 } from 'lucide-react';
-import { getTipById, getActiveTips, formatDate, type BeautyTip } from '@/lib/tipsUtils';
+import { getTipByIdAsync, getActiveTipsAsync, formatDate, type BeautyTip } from '@/lib/tipsUtils';
 
 /* ── Category colours ───────────────────────────────────────── */
 const CAT_COLORS: Record<string, { bg: string; text: string }> = {
@@ -59,7 +59,7 @@ function renderContent(raw: string) {
 function RelatedCard({ tip }: { tip: BeautyTip }) {
   const cs = catStyle(tip.category);
   return (
-    <Link to={`/beauty-tips/${tip.id}`}
+    <Link to={`/beauty-tips/${tip.tipId || tip.id}`}
       className="group flex gap-3 p-3 rounded-xl hover:bg-purple-50 transition-colors">
       <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-purple-100">
         {tip.coverImage
@@ -93,16 +93,19 @@ export default function BeautyTipDetail() {
 
   useEffect(() => {
     if (!id) { navigate('/beauty-tips'); return; }
-    const found = getTipById(id);
-    if (!found || !found.active) { navigate('/beauty-tips'); return; }
-    setTip(found);
-
-    // Related: same category, exclude current, max 3
-    const all = getActiveTips().filter(t => t.id !== id);
-    const sameCat = all.filter(t => t.category === found.category);
-    setRelated((sameCat.length >= 2 ? sameCat : all).slice(0, 3));
-    setLoading(false);
-
+    setLoading(true);
+    getTipByIdAsync(id)
+      .then(found => {
+        if (!found || !found.active) { navigate('/beauty-tips'); return; }
+        setTip(found);
+        return getActiveTipsAsync().then(all => {
+          const others = all.filter(t => (t.tipId || t.id) !== id);
+          const sameCat = others.filter(t => t.category === found.category);
+          setRelated((sameCat.length >= 2 ? sameCat : others).slice(0, 3));
+          setLoading(false);
+        });
+      })
+      .catch(() => navigate('/beauty-tips'));
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [id, navigate]);
 

@@ -7,8 +7,9 @@ import {
   XCircle, Clock, Eye, RefreshCw, Tag,
 } from 'lucide-react';
 import {
-  getBookings, upsertBooking, fmt, type StoredBooking,
+  fmt, type StoredBooking,
 } from '@/lib/paymentUtils';
+import { bookingsApi } from '@/lib/apiService';
 
 /* ─── Types ─────────────────────────────────────────────────────────────── */
 type StatusKey = StoredBooking['status'];
@@ -180,18 +181,20 @@ export default function AdminBookings() {
 
   useEffect(() => {
     if (!localStorage.getItem('neru-admin-auth')) navigate('/admin');
-    setBookings(getBookings());
+    bookingsApi.getAll().then(setBookings).catch(() => {});
   }, [navigate]);
 
-  const refresh = () => { setBookings(getBookings()); toast({ title: 'Refreshed' }); };
+  const refresh = () => {
+    bookingsApi.getAll().then(b => { setBookings(b); toast({ title: 'Refreshed' }); }).catch(() => {});
+  };
 
   const updateStatus = (id: string, status: StatusKey) => {
-    const b = bookings.find(x => x.id === id);
-    if (!b) return;
-    const updated: StoredBooking = { ...b, status, payment: { ...b.payment, status } };
-    upsertBooking(updated);
-    setBookings(prev => prev.map(x => x.id === id ? updated : x));
-    toast({ title: `Status → ${STATUS_CFG[status].label}` });
+    bookingsApi.updateStatus(id, status)
+      .then(() => {
+        setBookings(prev => prev.map(x => x.id === id ? { ...x, status, payment: { ...x.payment, status } } : x));
+        toast({ title: `Status → ${STATUS_CFG[status].label}` });
+      })
+      .catch(() => toast({ title: 'Update failed', variant: 'destructive' }));
   };
 
   const filtered = useMemo(() => {

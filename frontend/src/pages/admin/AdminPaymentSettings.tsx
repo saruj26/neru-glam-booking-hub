@@ -9,9 +9,9 @@ import {
   TrendingUp, Users, DollarSign,
 } from 'lucide-react';
 import {
-  getPaymentConfig, savePaymentConfig,
   DEFAULT_PAYMENT_CONFIG, type PaymentConfig,
 } from '@/lib/paymentUtils';
+import { paymentApi } from '@/lib/apiService';
 
 /* ─── Toggle ───────────────────────────────────────────────────────────────── */
 function Toggle({
@@ -315,7 +315,7 @@ export default function AdminPaymentSettings() {
 
   useEffect(() => {
     if (!localStorage.getItem('neru-admin-auth')) navigate('/admin');
-    setConfig(getPaymentConfig());
+    paymentApi.getConfig().then(setConfig).catch(() => {});
   }, [navigate]);
 
   const patch = (partial: Partial<PaymentConfig>) =>
@@ -326,7 +326,7 @@ export default function AdminPaymentSettings() {
       toast({ title: 'Validation Error', description: 'At least one payment method must be enabled.', variant: 'destructive' });
       return;
     }
-    savePaymentConfig(config);
+    paymentApi.updateConfig(config).catch(() => {});
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
     toast({ title: 'Settings Saved ✓', description: 'Payment configuration updated. All new bookings will use these settings.' });

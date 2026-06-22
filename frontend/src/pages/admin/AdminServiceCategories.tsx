@@ -7,9 +7,9 @@ import {
   Star, Eye, EyeOff, Save, X, Check, Search, Sparkles,
 } from 'lucide-react';
 import {
-  getServiceCategories, saveServiceCategories,
   type ServiceCategory, newId,
 } from '@/lib/galleryUtils';
+import { serviceCategoriesApi } from '@/lib/apiService';
 
 /* ═══ helpers ══════════════════════════════════════════════════════ */
 const BLANK: Omit<ServiceCategory, 'id' | 'createdAt'> = {
@@ -217,33 +217,38 @@ export default function AdminServiceCategories() {
 
   useEffect(() => {
     if (!localStorage.getItem('neru-admin-auth')) navigate('/admin');
-    setCats(getServiceCategories().sort((a, b) => a.order - b.order));
+    serviceCategoriesApi.getAll().then(c => setCats(c.sort((a, b) => a.order - b.order))).catch(() => {});
   }, [navigate]);
-
-  const persist = (next: ServiceCategory[]) => { setCats(next); saveServiceCategories(next); };
 
   const handleSave = (cat: ServiceCategory) => {
     const existing = cats.find(c => c.id === cat.id);
-    let next: ServiceCategory[];
     if (existing) {
-      next = cats.map(c => c.id === cat.id ? cat : c);
+      serviceCategoriesApi.update(cat.id, cat)
+        .then(c => { setCats(prev => prev.map(x => x.id === cat.id ? c : x).sort((a, b) => a.order - b.order)); toast({ title: 'Category updated ✓' }); })
+        .catch(() => toast({ title: 'Update failed', variant: 'destructive' }));
     } else {
       cat.order = cats.length + 1;
-      next = [...cats, cat];
+      serviceCategoriesApi.create(cat)
+        .then(c => { setCats(prev => [...prev, c].sort((a, b) => a.order - b.order)); toast({ title: 'Category created ✓' }); })
+        .catch(() => toast({ title: 'Create failed', variant: 'destructive' }));
     }
-    persist(next.sort((a, b) => a.order - b.order));
     setDialog({ open: false, data: null });
-    toast({ title: existing ? 'Category updated ✓' : 'Category created ✓' });
   };
 
   const handleDelete = (id: string) => {
     if (!window.confirm('Delete this category?')) return;
-    persist(cats.filter(c => c.id !== id));
-    toast({ title: 'Category deleted' });
+    serviceCategoriesApi.delete(id)
+      .then(() => { setCats(prev => prev.filter(c => c.id !== id)); toast({ title: 'Category deleted' }); })
+      .catch(() => toast({ title: 'Delete failed', variant: 'destructive' }));
   };
 
   const toggle = (id: string, key: 'active' | 'featured') => {
-    persist(cats.map(c => c.id === id ? { ...c, [key]: !c[key] } : c));
+    const cat = cats.find(c => c.id === id);
+    if (!cat) return;
+    const updated = { ...cat, [key]: !cat[key] };
+    serviceCategoriesApi.update(id, updated)
+      .then(c => setCats(prev => prev.map(x => x.id === id ? c : x)))
+      .catch(() => {});
   };
 
   const move = (id: string, dir: 'up' | 'down') => {
@@ -253,7 +258,10 @@ export default function AdminServiceCategories() {
     const next = [...cats];
     const swap = dir === 'up' ? idx - 1 : idx + 1;
     [next[idx], next[swap]] = [next[swap], next[idx]];
-    persist(next.map((c, i) => ({ ...c, order: i + 1 })));
+    const reordered = next.map((c, i) => ({ ...c, order: i + 1 }));
+    serviceCategoriesApi.bulkUpdate(reordered)
+      .then(() => setCats(reordered))
+      .catch(() => {});
   };
 
   const filtered = cats.filter(c =>

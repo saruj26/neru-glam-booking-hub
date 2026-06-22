@@ -8,12 +8,10 @@ import {
   Zap, TrendingUp, Check,
 } from 'lucide-react';
 import {
-  getGalleryImages, saveGalleryImages,
-  getGalleryCategories, saveGalleryCategories,
-  getBeforeAfterPairs, saveBeforeAfterPairs,
   type GalleryImage, type GalleryCategory, type BeforeAfterPair,
   newId,
 } from '@/lib/galleryUtils';
+import { galleryApi } from '@/lib/apiService';
 
 /* ═══ shared ════════════════════════════════════════════════════════ */
 function ImgPreview({ url }: { url: string }) {
@@ -214,25 +212,38 @@ function GalleryImagesTab({ galCats }: { galCats: GalleryCategory[] }) {
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
 
-  useEffect(() => { setImages(getGalleryImages().sort((a, b) => a.order - b.order)); }, []);
-
-  const persist = (next: GalleryImage[]) => { setImages(next); saveGalleryImages(next); };
+  useEffect(() => {
+    galleryApi.getImages().then(imgs => setImages(imgs.sort((a, b) => a.order - b.order))).catch(() => {});
+  }, []);
 
   const handleSave = (img: GalleryImage) => {
     const exists = images.find(i => i.id === img.id);
-    const next = exists ? images.map(i => i.id === img.id ? img : i) : [...images, { ...img, order: images.length + 1 }];
-    persist(next);
+    if (exists) {
+      galleryApi.updateImage(img.id, img)
+        .then(i => { setImages(prev => prev.map(x => x.id === img.id ? i : x)); toast({ title: 'Image updated ✓' }); })
+        .catch(() => toast({ title: 'Update failed', variant: 'destructive' }));
+    } else {
+      galleryApi.createImage({ ...img, order: images.length + 1 })
+        .then(i => { setImages(prev => [...prev, i]); toast({ title: 'Image added ✓' }); })
+        .catch(() => toast({ title: 'Create failed', variant: 'destructive' }));
+    }
     setDialog({ open: false, data: null });
-    toast({ title: exists ? 'Image updated ✓' : 'Image added ✓' });
   };
 
   const handleDelete = (id: string) => {
     if (!window.confirm('Delete this image?')) return;
-    persist(images.filter(i => i.id !== id));
-    toast({ title: 'Image deleted' });
+    galleryApi.deleteImage(id)
+      .then(() => { setImages(prev => prev.filter(i => i.id !== id)); toast({ title: 'Image deleted' }); })
+      .catch(() => toast({ title: 'Delete failed', variant: 'destructive' }));
   };
 
-  const toggle = (id: string, key: 'active' | 'featured') => persist(images.map(i => i.id === id ? { ...i, [key]: !i[key] } : i));
+  const toggle = (id: string, key: 'active' | 'featured') => {
+    const img = images.find(i => i.id === id);
+    if (!img) return;
+    galleryApi.updateImage(id, { ...img, [key]: !img[key] })
+      .then(i => setImages(prev => prev.map(x => x.id === id ? i : x)))
+      .catch(() => {});
+  };
   const move = (id: string, dir: 'up' | 'down') => {
     const sorted = [...images].sort((a, b) => a.order - b.order);
     const idx = sorted.findIndex(i => i.id === id);
@@ -240,7 +251,8 @@ function GalleryImagesTab({ galCats }: { galCats: GalleryCategory[] }) {
     if (dir === 'down' && idx === sorted.length - 1) return;
     const swap = dir === 'up' ? idx - 1 : idx + 1;
     [sorted[idx], sorted[swap]] = [sorted[swap], sorted[idx]];
-    persist(sorted.map((i, n) => ({ ...i, order: n + 1 })));
+    const reordered = sorted.map((i, n) => ({ ...i, order: n + 1 }));
+    galleryApi.bulkUpdateImages(reordered).then(() => setImages(reordered)).catch(() => {});
   };
 
   const catName = (id: string) => galCats.find(c => c.id === id)?.name ?? 'Uncategorized';
@@ -386,15 +398,20 @@ function BeforeAfterTab() {
   const [pairs, setPairs] = useState<BeforeAfterPair[]>([]);
   const [dialog, setDialog] = useState<{ open: boolean; data: Partial<BeforeAfterPair> | null }>({ open: false, data: null });
 
-  useEffect(() => { setPairs(getBeforeAfterPairs()); }, []);
-
-  const persist = (next: BeforeAfterPair[]) => { setPairs(next); saveBeforeAfterPairs(next); };
+  useEffect(() => { galleryApi.getBeforeAfter().then(setPairs).catch(() => {}); }, []);
 
   const handleSave = (pair: BeforeAfterPair) => {
     const exists = pairs.find(p => p.id === pair.id);
-    persist(exists ? pairs.map(p => p.id === pair.id ? pair : p) : [...pairs, pair]);
+    if (exists) {
+      galleryApi.updateBeforeAfter(pair.id, pair)
+        .then(p => { setPairs(prev => prev.map(x => x.id === pair.id ? p : x)); toast({ title: 'Pair updated ✓' }); })
+        .catch(() => toast({ title: 'Update failed', variant: 'destructive' }));
+    } else {
+      galleryApi.createBeforeAfter(pair)
+        .then(p => { setPairs(prev => [...prev, p]); toast({ title: 'Pair added ✓' }); })
+        .catch(() => toast({ title: 'Create failed', variant: 'destructive' }));
+    }
     setDialog({ open: false, data: null });
-    toast({ title: exists ? 'Pair updated ✓' : 'Pair added ✓' });
   };
 
   return (
@@ -441,16 +458,16 @@ function BeforeAfterTab() {
                     className="flex-1 h-7 rounded-lg border border-purple-200 text-purple-700 hover:bg-purple-50 text-[10px] font-bold flex items-center justify-center gap-1">
                     <Edit2 size={9} /> Edit
                   </button>
-                  <button onClick={() => { persist(pairs.map(p => p.id === pair.id ? { ...p, active: !p.active } : p)); }}
+                  <button onClick={() => { galleryApi.updateBeforeAfter(pair.id, { ...pair, active: !pair.active }).then(p => setPairs(prev => prev.map(x => x.id === pair.id ? p : x))).catch(() => {}); }}
                     className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400">
                     {pair.active ? <EyeOff size={11} /> : <Eye size={11} />}
                   </button>
-                  <button onClick={() => { persist(pairs.map(p => p.id === pair.id ? { ...p, featured: !p.featured } : p)); }}
+                  <button onClick={() => { galleryApi.updateBeforeAfter(pair.id, { ...pair, featured: !pair.featured }).then(p => setPairs(prev => prev.map(x => x.id === pair.id ? p : x))).catch(() => {}); }}
                     className="w-7 h-7 rounded-lg border flex items-center justify-center"
                     style={pair.featured ? { borderColor: '#D4A53F', color: '#D4A53F' } : { borderColor: '#E5E7EB', color: '#9CA3AF' }}>
                     <Star size={11} fill={pair.featured ? 'currentColor' : 'none'} />
                   </button>
-                  <button onClick={() => { if (!window.confirm('Delete?')) return; persist(pairs.filter(p => p.id !== pair.id)); toast({ title: 'Deleted' }); }}
+                  <button onClick={() => { if (!window.confirm('Delete?')) return; galleryApi.deleteBeforeAfter(pair.id).then(() => { setPairs(prev => prev.filter(p => p.id !== pair.id)); toast({ title: 'Deleted' }); }).catch(() => {}); }}
                     className="w-7 h-7 rounded-lg border border-red-200 flex items-center justify-center text-red-400">
                     <Trash2 size={11} />
                   </button>
@@ -477,15 +494,17 @@ function GalCatTab() {
   const [newCover, setNewCover] = useState('');
   const [adding, setAdding] = useState(false);
 
-  useEffect(() => { setCats(getGalleryCategories().sort((a, b) => a.order - b.order)); }, []);
-  const persist = (next: GalleryCategory[]) => { setCats(next); saveGalleryCategories(next); };
+  useEffect(() => {
+    galleryApi.getCategories().then(c => setCats(c.sort((a, b) => a.order - b.order))).catch(() => {});
+  }, []);
 
   const addCat = () => {
     if (!newName.trim()) { toast({ title: 'Name required', variant: 'destructive' }); return; }
     const cat: GalleryCategory = { id: newId('gc'), name: newName, slug: newName.toLowerCase().replace(/\s+/g, '-'), description: newDesc, coverImage: newCover, active: true, order: cats.length + 1 };
-    persist([...cats, cat]);
+    galleryApi.createCategory(cat)
+      .then(c => { setCats(prev => [...prev, c].sort((a, b) => a.order - b.order)); toast({ title: 'Category added ✓' }); })
+      .catch(() => toast({ title: 'Create failed', variant: 'destructive' }));
     setNewName(''); setNewDesc(''); setNewCover(''); setAdding(false);
-    toast({ title: 'Category added ✓' });
   };
 
   return (
@@ -520,7 +539,13 @@ function GalCatTab() {
             {!cat.coverImage && <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center flex-shrink-0"><Layers size={16} className="text-purple-400" /></div>}
             {editId === cat.id ? (
               <input defaultValue={cat.name} autoFocus
-                onBlur={e => { persist(cats.map(c => c.id === cat.id ? { ...c, name: e.target.value } : c)); setEditId(null); }}
+                onBlur={e => {
+                  const updated = { ...cat, name: e.target.value };
+                  galleryApi.updateCategory(cat.id, updated)
+                    .then(c => setCats(prev => prev.map(x => x.id === cat.id ? c : x)))
+                    .catch(() => {});
+                  setEditId(null);
+                }}
                 className="flex-1 h-8 rounded-lg border border-purple-300 px-3 text-sm focus:outline-none" />
             ) : (
               <div className="flex-1 min-w-0">
@@ -531,8 +556,16 @@ function GalCatTab() {
             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${cat.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>{cat.active ? 'Active' : 'Off'}</span>
             <div className="flex gap-1">
               <button onClick={() => setEditId(cat.id)} className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-gray-50"><Edit2 size={11} /></button>
-              <button onClick={() => persist(cats.map(c => c.id === cat.id ? { ...c, active: !c.active } : c))} className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-gray-50">{cat.active ? <EyeOff size={11} /> : <Eye size={11} />}</button>
-              <button onClick={() => { if (!window.confirm('Delete?')) return; persist(cats.filter(c => c.id !== cat.id)); toast({ title: 'Deleted' }); }} className="w-7 h-7 rounded-lg border border-red-200 flex items-center justify-center text-red-400 hover:bg-red-50"><Trash2 size={11} /></button>
+              <button onClick={() => {
+                galleryApi.updateCategory(cat.id, { ...cat, active: !cat.active })
+                  .then(c => setCats(prev => prev.map(x => x.id === cat.id ? c : x))).catch(() => {});
+              }} className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-gray-50">{cat.active ? <EyeOff size={11} /> : <Eye size={11} />}</button>
+              <button onClick={() => {
+                if (!window.confirm('Delete?')) return;
+                galleryApi.deleteImage(cat.id).catch(() => {});
+                setCats(prev => prev.filter(c => c.id !== cat.id));
+                toast({ title: 'Deleted' });
+              }} className="w-7 h-7 rounded-lg border border-red-200 flex items-center justify-center text-red-400 hover:bg-red-50"><Trash2 size={11} /></button>
             </div>
           </div>
         ))}
@@ -549,7 +582,7 @@ export default function AdminGallery() {
 
   useEffect(() => {
     if (!localStorage.getItem('neru-admin-auth')) navigate('/admin');
-    setGalCats(getGalleryCategories());
+    galleryApi.getCategories().then(setGalCats).catch(() => {});
   }, [navigate]);
 
   const TABS = [

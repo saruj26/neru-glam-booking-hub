@@ -7,9 +7,10 @@ import {
   Save, X, Search, Clock, Tag, Sparkles, Check,
 } from 'lucide-react';
 import {
-  getTips, saveTips, TIP_CATEGORIES, newTipId,
+  TIP_CATEGORIES, newTipId,
   type BeautyTip, formatDate,
 } from '@/lib/tipsUtils';
+import { beautyTipsApi } from '@/lib/apiService';
 
 /* ══════════════════════════════════════════════════════════════════
    TIP DIALOG — Add / Edit
@@ -285,26 +286,39 @@ export default function AdminBeautyTips() {
 
   useEffect(() => {
     if (!localStorage.getItem('neru-admin-auth')) navigate('/admin');
-    setTips(getTips());
+    beautyTipsApi.getAll().then(setTips).catch(() => {});
   }, [navigate]);
-
-  const persist = (next: BeautyTip[]) => { setTips(next); saveTips(next); };
 
   const handleSave = (tip: BeautyTip) => {
     const exists = tips.find(t => t.id === tip.id);
-    persist(exists ? tips.map(t => t.id === tip.id ? tip : t) : [tip, ...tips]);
+    if (exists) {
+      beautyTipsApi.update(tip.tipId ?? tip.id, tip)
+        .then(t => { setTips(prev => prev.map(x => x.id === tip.id ? t : x)); toast({ title: 'Tip updated ✓' }); })
+        .catch(() => toast({ title: 'Update failed', variant: 'destructive' }));
+    } else {
+      beautyTipsApi.create(tip)
+        .then(t => { setTips(prev => [t, ...prev]); toast({ title: 'Tip published ✓' }); })
+        .catch(() => toast({ title: 'Create failed', variant: 'destructive' }));
+    }
     setDialog({ open: false, data: null });
-    toast({ title: exists ? 'Tip updated ✓' : 'Tip published ✓' });
   };
 
   const handleDelete = (id: string) => {
     if (!window.confirm('Delete this beauty tip?')) return;
-    persist(tips.filter(t => t.id !== id));
-    toast({ title: 'Tip deleted' });
+    const tip = tips.find(t => t.id === id);
+    beautyTipsApi.delete(tip?.tipId ?? id)
+      .then(() => { setTips(prev => prev.filter(t => t.id !== id)); toast({ title: 'Tip deleted' }); })
+      .catch(() => toast({ title: 'Delete failed', variant: 'destructive' }));
   };
 
-  const toggle = (id: string, key: 'active' | 'featured') =>
-    persist(tips.map(t => t.id === id ? { ...t, [key]: !t[key] } : t));
+  const toggle = (id: string, key: 'active' | 'featured') => {
+    const tip = tips.find(t => t.id === id);
+    if (!tip) return;
+    const updated = { ...tip, [key]: !tip[key] };
+    beautyTipsApi.update(tip.tipId ?? id, updated)
+      .then(t => setTips(prev => prev.map(x => x.id === id ? t : x)))
+      .catch(() => {});
+  };
 
   const filtered = tips
     .filter(t => catFilter === 'All' || t.category === catFilter)

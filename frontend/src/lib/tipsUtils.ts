@@ -2,6 +2,7 @@ import { beautyTipsApi } from './apiService';
 
 export interface BeautyTip {
   id: string;
+  tipId?: string;   // backend route key (e.g. "tip-1")
   title: string;
   excerpt: string;
   content: string;
