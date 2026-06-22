@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import {
@@ -11,57 +11,9 @@ import {
   Star,
   ArrowUpRight,
 } from 'lucide-react';
+import { bookingsApi } from '@/lib/apiService';
+import type { StoredBooking } from '@/lib/paymentUtils';
 
-const stats = [
-  {
-    label: 'Total Bookings',
-    value: '325',
-    sub: '283 completed',
-    icon: CalendarCheck,
-    trend: '+14%',
-    trendUp: true,
-    gradient: 'linear-gradient(135deg,#9B1B30,#C0392B)',
-    iconBg: 'rgba(255,255,255,0.2)',
-  },
-  {
-    label: 'Pending',
-    value: '42',
-    sub: 'Awaiting confirmation',
-    icon: Clock,
-    trend: '-3%',
-    trendUp: false,
-    gradient: 'linear-gradient(135deg,#D4570A,#F59E0B)',
-    iconBg: 'rgba(255,255,255,0.2)',
-  },
-  {
-    label: 'Clients',
-    value: '189',
-    sub: '+12% this month',
-    icon: Users,
-    trend: '+12%',
-    trendUp: true,
-    gradient: 'linear-gradient(135deg,#7B0D1E,#9B1B30)',
-    iconBg: 'rgba(255,255,255,0.2)',
-  },
-  {
-    label: 'Revenue',
-    value: '$12,450',
-    sub: '+8% this month',
-    icon: DollarSign,
-    trend: '+8%',
-    trendUp: true,
-    gradient: 'linear-gradient(135deg,#B7791F,#D97706)',
-    iconBg: 'rgba(255,255,255,0.2)',
-  },
-];
-
-const recentBookings = [
-  { id: 'BK001', customer: 'Maya Johnson',   service: 'Premium Birthday Glam',      date: '22 Apr', time: '2:00 PM', status: 'confirmed' },
-  { id: 'BK002', customer: 'Sarah Williams', service: 'Traditional Bridal Makeup',  date: '24 Apr', time: '10:00 AM', status: 'pending'   },
-  { id: 'BK003', customer: 'Aisha Khan',     service: 'Festive Makeup',             date: '25 Apr', time: '4:30 PM', status: 'confirmed' },
-  { id: 'BK004', customer: 'Priya Nair',     service: 'Photoshoot Makeup',          date: '26 Apr', time: '11:00 AM', status: 'pending'  },
-  { id: 'BK005', customer: 'Lena Park',      service: 'Engagement Glam',            date: '27 Apr', time: '1:00 PM', status: 'confirmed' },
-];
 
 const popularServices = [
   { name: 'Premium Birthday Glam',      bookings: 45, rating: 4.9, revenue: '$2,250' },
@@ -79,12 +31,32 @@ const activities = [
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
+  const [allBookings, setAllBookings] = useState<StoredBooking[]>([]);
 
   useEffect(() => {
-    if (localStorage.getItem('neru-admin-auth') !== 'true') {
-      navigate('/admin');
-    }
+    if (localStorage.getItem('neru-admin-auth') !== 'true') { navigate('/admin'); return; }
+    bookingsApi.getAll().then(setAllBookings).catch(() => {});
   }, [navigate]);
+
+  const stats = useMemo(() => {
+    const total     = allBookings.length;
+    const completed = allBookings.filter(b => b.status === 'completed').length;
+    const pending   = allBookings.filter(b => ['pending_payment','partially_paid'].includes(b.status)).length;
+    const clients   = new Set(allBookings.map(b => b.customer.email)).size;
+    const revenue   = allBookings.filter(b => b.status === 'completed').reduce((s, b) => s + b.pricing.finalPrice, 0);
+    return [
+      { label: 'Total Bookings', value: String(total),      sub: `${completed} completed`,       icon: CalendarCheck, trend: '', trendUp: true,  gradient: 'linear-gradient(135deg,#9B1B30,#C0392B)' },
+      { label: 'Pending',        value: String(pending),    sub: 'Awaiting confirmation',         icon: Clock,         trend: '', trendUp: false, gradient: 'linear-gradient(135deg,#D4570A,#F59E0B)' },
+      { label: 'Clients',        value: String(clients),    sub: 'Unique customers',              icon: Users,         trend: '', trendUp: true,  gradient: 'linear-gradient(135deg,#7B0D1E,#9B1B30)' },
+      { label: 'Revenue',        value: `₹${revenue.toLocaleString('en-IN')}`, sub: 'From completed bookings', icon: DollarSign, trend: '', trendUp: true, gradient: 'linear-gradient(135deg,#B7791F,#D97706)' },
+    ];
+  }, [allBookings]);
+
+  const recentBookings = useMemo(() =>
+    [...allBookings]
+      .sort((a, b) => new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime())
+      .slice(0, 5)
+  , [allBookings]);
 
   const maxBookings = popularServices[0].bookings;
 

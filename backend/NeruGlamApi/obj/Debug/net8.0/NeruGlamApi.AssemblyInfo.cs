@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("NeruGlamApi")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+bb25b93326bd11f8b5f66ce90b13b84349dcbb46")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+fb77eea2dc8aee55dcc2ecc206c0608eed6f7b03")]
 [assembly: System.Reflection.AssemblyProductAttribute("NeruGlamApi")]
 [assembly: System.Reflection.AssemblyTitleAttribute("NeruGlamApi")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

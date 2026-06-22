@@ -8,7 +8,8 @@ export interface PaymentConfig {
 }
 
 export interface Offer {
-  id: string;
+  id?: string;
+  offerId?: string;
   name: string;
   description: string;
   discountType: 'percentage' | 'fixed';
@@ -40,7 +41,8 @@ export interface BookingPaymentInfo {
 }
 
 export interface StoredBooking {
-  id: string;
+  id?: string;
+  bookingId?: string;
   customer: { name: string; email: string; phone: string };
   service: { name: string; category: string; type: string };
   date: string;
