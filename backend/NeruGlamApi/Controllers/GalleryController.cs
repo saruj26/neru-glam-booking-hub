@@ -42,6 +42,13 @@ public class GalleryController : ControllerBase
         return result.ModifiedCount == 0 ? NotFound() : Ok(cat);
     }
 
+    [HttpDelete("categories/{categoryId}")]
+    public async Task<IActionResult> DeleteCategory(string categoryId)
+    {
+        var result = await _db.GalleryCategories.DeleteOneAsync(c => c.CategoryId == categoryId);
+        return result.DeletedCount == 0 ? NotFound() : Ok(new { message = "Category deleted." });
+    }
+
     [HttpPut("categories/bulk")]
     public async Task<IActionResult> BulkUpdateCategories([FromBody] List<GalleryCategory> cats)
     {

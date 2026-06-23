@@ -34,7 +34,7 @@ const AdminDashboard = () => {
   const [allBookings, setAllBookings] = useState<StoredBooking[]>([]);
 
   useEffect(() => {
-    if (localStorage.getItem('neru-admin-auth') !== 'true') { navigate('/admin'); return; }
+    if (!localStorage.getItem('neru-admin-auth')) { navigate('/admin'); return; }
     bookingsApi.getAll().then(setAllBookings).catch(() => {});
   }, [navigate]);
 
@@ -129,18 +129,18 @@ const AdminDashboard = () => {
                 </thead>
                 <tbody className="divide-y divide-rose-50">
                   {recentBookings.map((b) => (
-                    <tr key={b.id} className="hover:bg-[#FDF5F0] transition-colors">
-                      <td className="py-3.5 px-6 font-mono text-xs text-gray-400">{b.id}</td>
+                    <tr key={b.bookingId ?? b.id} className="hover:bg-[#FDF5F0] transition-colors">
+                      <td className="py-3.5 px-6 font-mono text-xs text-gray-400">{b.bookingId ?? b.id}</td>
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-2.5">
                           <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
                             style={{ background: 'linear-gradient(135deg,#9B1B30,#C0392B)' }}>
-                            {b.customer[0]}
+                            {b.customer.name[0]}
                           </div>
-                          <span className="font-medium text-gray-800 text-xs">{b.customer}</span>
+                          <span className="font-medium text-gray-800 text-xs">{b.customer.name}</span>
                         </div>
                       </td>
-                      <td className="py-3.5 px-4 text-gray-600 text-xs max-w-[140px] truncate">{b.service}</td>
+                      <td className="py-3.5 px-4 text-gray-600 text-xs max-w-[140px] truncate">{b.service.name}</td>
                       <td className="py-3.5 px-4 text-xs text-gray-500 whitespace-nowrap">{b.date} · {b.time}</td>
                       <td className="py-3.5 px-4">
                         <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${

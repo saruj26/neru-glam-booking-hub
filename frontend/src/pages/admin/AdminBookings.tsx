@@ -62,7 +62,7 @@ function DetailModal({ booking, onClose }: { booking: StoredBooking; onClose: ()
           <div className="flex items-center justify-between">
             <div>
               <p className="text-amber-300 text-xs font-bold tracking-wider uppercase mb-0.5">Booking Details</p>
-              <p className="text-white font-extrabold text-lg font-mono">{booking.id}</p>
+              <p className="text-white font-extrabold text-lg font-mono">{booking.bookingId ?? booking.id}</p>
             </div>
             <StatusBadge status={booking.status} />
           </div>
@@ -188,10 +188,10 @@ export default function AdminBookings() {
     bookingsApi.getAll().then(b => { setBookings(b); toast({ title: 'Refreshed' }); }).catch(() => {});
   };
 
-  const updateStatus = (id: string, status: StatusKey) => {
-    bookingsApi.updateStatus(id, status)
+  const updateStatus = (bookingId: string, status: StatusKey) => {
+    bookingsApi.updateStatus(bookingId, status)
       .then(() => {
-        setBookings(prev => prev.map(x => x.id === id ? { ...x, status, payment: { ...x.payment, status } } : x));
+        setBookings(prev => prev.map(x => (x.bookingId ?? x.id) === bookingId ? { ...x, status, payment: { ...x.payment, status } } : x));
         toast({ title: `Status → ${STATUS_CFG[status].label}` });
       })
       .catch(() => toast({ title: 'Update failed', variant: 'destructive' }));
@@ -203,7 +203,7 @@ export default function AdminBookings() {
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       list = list.filter(b =>
-        b.id.toLowerCase().includes(q) ||
+        (b.bookingId ?? b.id ?? '').toLowerCase().includes(q) ||
         b.customer.name.toLowerCase().includes(q) ||
         b.customer.email.toLowerCase().includes(q) ||
         b.service.name.toLowerCase().includes(q),
@@ -314,9 +314,9 @@ export default function AdminBookings() {
                   </thead>
                   <tbody>
                     {filtered.map((b, i) => (
-                      <tr key={b.id} className={`hover:bg-gray-50/50 transition-colors ${i < filtered.length - 1 ? 'border-b border-gray-50' : ''}`}>
+                      <tr key={b.bookingId ?? b.id} className={`hover:bg-gray-50/50 transition-colors ${i < filtered.length - 1 ? 'border-b border-gray-50' : ''}`}>
                         <td className="px-4 py-3.5">
-                          <p className="font-mono font-bold text-xs" style={{ color: '#7C3AED' }}>{b.id}</p>
+                          <p className="font-mono font-bold text-xs" style={{ color: '#7C3AED' }}>{b.bookingId ?? b.id}</p>
                           <p className="text-gray-400 text-[10px] mt-0.5">{new Date(b.createdAt).toLocaleDateString('en-IN')}</p>
                         </td>
                         <td className="px-4 py-3.5">
@@ -354,13 +354,13 @@ export default function AdminBookings() {
                           <div className="flex items-center gap-1">
                             <button onClick={() => setDetail(b)} title="View" className="p-1.5 rounded-lg text-gray-400 hover:text-purple-600 hover:bg-purple-50 transition-all"><Eye size={13} /></button>
                             {b.status === 'pending_payment' && (
-                              <button onClick={() => updateStatus(b.id, 'confirmed')} title="Confirm" className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-all"><CheckCircle size={13} /></button>
+                              <button onClick={() => updateStatus(b.bookingId ?? b.id!, 'confirmed')} title="Confirm" className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-all"><CheckCircle size={13} /></button>
                             )}
                             {['confirmed', 'partially_paid'].includes(b.status) && (
-                              <button onClick={() => updateStatus(b.id, 'completed')} title="Complete" className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 transition-all"><CheckCircle size={13} /></button>
+                              <button onClick={() => updateStatus(b.bookingId ?? b.id!, 'completed')} title="Complete" className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 transition-all"><CheckCircle size={13} /></button>
                             )}
                             {!['completed', 'cancelled'].includes(b.status) && (
-                              <button onClick={() => updateStatus(b.id, 'cancelled')} title="Cancel" className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-all"><XCircle size={13} /></button>
+                              <button onClick={() => updateStatus(b.bookingId ?? b.id!, 'cancelled')} title="Cancel" className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-all"><XCircle size={13} /></button>
                             )}
                           </div>
                         </td>
@@ -374,10 +374,10 @@ export default function AdminBookings() {
             {/* Mobile cards */}
             <div className="lg:hidden space-y-3">
               {filtered.map(b => (
-                <div key={b.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+                <div key={b.bookingId ?? b.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
                   <div className="flex items-start justify-between mb-2">
                     <div>
-                      <p className="font-mono font-bold text-xs" style={{ color: '#7C3AED' }}>{b.id}</p>
+                      <p className="font-mono font-bold text-xs" style={{ color: '#7C3AED' }}>{b.bookingId ?? b.id}</p>
                       <p className="font-semibold text-gray-800 text-sm">{b.customer.name}</p>
                       <p className="text-gray-500 text-xs">{b.service.name}</p>
                     </div>
@@ -392,12 +392,12 @@ export default function AdminBookings() {
                       <Eye size={12} /> Details
                     </button>
                     {['confirmed', 'partially_paid'].includes(b.status) && (
-                      <button onClick={() => updateStatus(b.id, 'completed')} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-700">
+                      <button onClick={() => updateStatus(b.bookingId ?? b.id!, 'completed')} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-700">
                         <CheckCircle size={12} /> Complete
                       </button>
                     )}
                     {!['completed', 'cancelled'].includes(b.status) && (
-                      <button onClick={() => updateStatus(b.id, 'cancelled')} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold bg-red-50 text-red-600">
+                      <button onClick={() => updateStatus(b.bookingId ?? b.id!, 'cancelled')} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold bg-red-50 text-red-600">
                         <XCircle size={12} /> Cancel
                       </button>
                     )}

@@ -219,7 +219,7 @@ function GalleryImagesTab({ galCats }: { galCats: GalleryCategory[] }) {
   const handleSave = (img: GalleryImage) => {
     const exists = images.find(i => i.id === img.id);
     if (exists) {
-      galleryApi.updateImage(img.id, img)
+      galleryApi.updateImage(img.imageId ?? img.id, img)
         .then(i => { setImages(prev => prev.map(x => x.id === img.id ? i : x)); toast({ title: 'Image updated ✓' }); })
         .catch(() => toast({ title: 'Update failed', variant: 'destructive' }));
     } else {
@@ -232,7 +232,8 @@ function GalleryImagesTab({ galCats }: { galCats: GalleryCategory[] }) {
 
   const handleDelete = (id: string) => {
     if (!window.confirm('Delete this image?')) return;
-    galleryApi.deleteImage(id)
+    const img = images.find(i => i.id === id);
+    galleryApi.deleteImage(img?.imageId ?? id)
       .then(() => { setImages(prev => prev.filter(i => i.id !== id)); toast({ title: 'Image deleted' }); })
       .catch(() => toast({ title: 'Delete failed', variant: 'destructive' }));
   };
@@ -240,7 +241,7 @@ function GalleryImagesTab({ galCats }: { galCats: GalleryCategory[] }) {
   const toggle = (id: string, key: 'active' | 'featured') => {
     const img = images.find(i => i.id === id);
     if (!img) return;
-    galleryApi.updateImage(id, { ...img, [key]: !img[key] })
+    galleryApi.updateImage(img.imageId ?? id, { ...img, [key]: !img[key] })
       .then(i => setImages(prev => prev.map(x => x.id === id ? i : x)))
       .catch(() => {});
   };
@@ -403,7 +404,7 @@ function BeforeAfterTab() {
   const handleSave = (pair: BeforeAfterPair) => {
     const exists = pairs.find(p => p.id === pair.id);
     if (exists) {
-      galleryApi.updateBeforeAfter(pair.id, pair)
+      galleryApi.updateBeforeAfter(pair.pairId ?? pair.id, pair)
         .then(p => { setPairs(prev => prev.map(x => x.id === pair.id ? p : x)); toast({ title: 'Pair updated ✓' }); })
         .catch(() => toast({ title: 'Update failed', variant: 'destructive' }));
     } else {
@@ -458,16 +459,16 @@ function BeforeAfterTab() {
                     className="flex-1 h-7 rounded-lg border border-purple-200 text-purple-700 hover:bg-purple-50 text-[10px] font-bold flex items-center justify-center gap-1">
                     <Edit2 size={9} /> Edit
                   </button>
-                  <button onClick={() => { galleryApi.updateBeforeAfter(pair.id, { ...pair, active: !pair.active }).then(p => setPairs(prev => prev.map(x => x.id === pair.id ? p : x))).catch(() => {}); }}
+                  <button onClick={() => { galleryApi.updateBeforeAfter(pair.pairId ?? pair.id, { ...pair, active: !pair.active }).then(p => setPairs(prev => prev.map(x => x.id === pair.id ? p : x))).catch(() => {}); }}
                     className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400">
                     {pair.active ? <EyeOff size={11} /> : <Eye size={11} />}
                   </button>
-                  <button onClick={() => { galleryApi.updateBeforeAfter(pair.id, { ...pair, featured: !pair.featured }).then(p => setPairs(prev => prev.map(x => x.id === pair.id ? p : x))).catch(() => {}); }}
+                  <button onClick={() => { galleryApi.updateBeforeAfter(pair.pairId ?? pair.id, { ...pair, featured: !pair.featured }).then(p => setPairs(prev => prev.map(x => x.id === pair.id ? p : x))).catch(() => {}); }}
                     className="w-7 h-7 rounded-lg border flex items-center justify-center"
                     style={pair.featured ? { borderColor: '#D4A53F', color: '#D4A53F' } : { borderColor: '#E5E7EB', color: '#9CA3AF' }}>
                     <Star size={11} fill={pair.featured ? 'currentColor' : 'none'} />
                   </button>
-                  <button onClick={() => { if (!window.confirm('Delete?')) return; galleryApi.deleteBeforeAfter(pair.id).then(() => { setPairs(prev => prev.filter(p => p.id !== pair.id)); toast({ title: 'Deleted' }); }).catch(() => {}); }}
+                  <button onClick={() => { if (!window.confirm('Delete?')) return; galleryApi.deleteBeforeAfter(pair.pairId ?? pair.id).then(() => { setPairs(prev => prev.filter(p => p.id !== pair.id)); toast({ title: 'Deleted' }); }).catch(() => {}); }}
                     className="w-7 h-7 rounded-lg border border-red-200 flex items-center justify-center text-red-400">
                     <Trash2 size={11} />
                   </button>
@@ -541,7 +542,7 @@ function GalCatTab() {
               <input defaultValue={cat.name} autoFocus
                 onBlur={e => {
                   const updated = { ...cat, name: e.target.value };
-                  galleryApi.updateCategory(cat.id, updated)
+                  galleryApi.updateCategory(cat.categoryId ?? cat.id, updated)
                     .then(c => setCats(prev => prev.map(x => x.id === cat.id ? c : x)))
                     .catch(() => {});
                   setEditId(null);
@@ -557,12 +558,12 @@ function GalCatTab() {
             <div className="flex gap-1">
               <button onClick={() => setEditId(cat.id)} className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-gray-50"><Edit2 size={11} /></button>
               <button onClick={() => {
-                galleryApi.updateCategory(cat.id, { ...cat, active: !cat.active })
+                galleryApi.updateCategory(cat.categoryId ?? cat.id, { ...cat, active: !cat.active })
                   .then(c => setCats(prev => prev.map(x => x.id === cat.id ? c : x))).catch(() => {});
               }} className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-gray-50">{cat.active ? <EyeOff size={11} /> : <Eye size={11} />}</button>
               <button onClick={() => {
                 if (!window.confirm('Delete?')) return;
-                galleryApi.deleteImage(cat.id).catch(() => {});
+                galleryApi.deleteCategory(cat.categoryId ?? cat.id).catch(() => {});
                 setCats(prev => prev.filter(c => c.id !== cat.id));
                 toast({ title: 'Deleted' });
               }} className="w-7 h-7 rounded-lg border border-red-200 flex items-center justify-center text-red-400 hover:bg-red-50"><Trash2 size={11} /></button>

@@ -115,6 +115,9 @@ export const galleryApi = {
   bulkUpdateCategories: (cats: GalleryCategory[]) =>
     api.put<{ message: string }>('/api/gallery/categories/bulk', cats),
 
+  deleteCategory: (categoryId: string) =>
+    api.delete<{ message: string }>(`/api/gallery/categories/${categoryId}`),
+
   getImages: (params?: { active?: boolean; featured?: boolean; limit?: number }) => {
     const q = new URLSearchParams();
     if (params?.active !== undefined) q.set('active', String(params.active));

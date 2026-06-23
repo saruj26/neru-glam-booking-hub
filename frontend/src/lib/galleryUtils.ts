@@ -2,6 +2,7 @@ import { serviceCategoriesApi, galleryApi } from './apiService';
 
 export interface ServiceCategory {
   id: string;
+  categoryId?: string;
   name: string;
   slug: string;
   description: string;
@@ -15,6 +16,7 @@ export interface ServiceCategory {
 
 export interface GalleryCategory {
   id: string;
+  categoryId?: string;
   name: string;
   slug: string;
   description: string;
@@ -25,6 +27,7 @@ export interface GalleryCategory {
 
 export interface GalleryImage {
   id: string;
+  imageId?: string;
   title: string;
   description: string;
   imageUrl: string;
@@ -38,6 +41,7 @@ export interface GalleryImage {
 
 export interface BeforeAfterPair {
   id: string;
+  pairId?: string;
   title: string;
   description: string;
   beforeImage: string;

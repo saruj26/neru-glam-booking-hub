@@ -93,7 +93,7 @@ function OfferDialog({ offer, onClose, onSave }: DialogProps) {
             <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#D4A53F,#F59E0B)' }}>
               <Tag size={15} className="text-white" />
             </div>
-            <h2 className="font-bold text-gray-900">{offer?.id ? 'Edit Offer' : 'New Offer'}</h2>
+            <h2 className="font-bold text-gray-900">{(offer?.id || offer?.offerId) ? 'Edit Offer' : 'New Offer'}</h2>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 transition-colors"><X size={16} /></button>
         </div>
@@ -238,15 +238,15 @@ export default function AdminOffers() {
   }, [navigate]);
 
   const handleSave = (form: Partial<Offer>) => {
-    if (form.id) {
-      const updated = { ...offers.find(o => o.id === form.id)!, ...form } as Offer;
-      offersApi.update(form.id, updated)
-        .then(o => { setOffers(prev => prev.map(x => x.id === form.id ? o : x)); toast({ title: 'Offer Updated', description: `"${form.name}" has been updated.` }); })
+    const routeId = form.offerId ?? form.id;
+    if (routeId) {
+      const updated = { ...offers.find(o => (o.offerId ?? o.id) === routeId)!, ...form } as Offer;
+      offersApi.update(routeId, updated)
+        .then(o => { setOffers(prev => prev.map(x => (x.offerId ?? x.id) === routeId ? o : x)); toast({ title: 'Offer Updated', description: `"${form.name}" has been updated.` }); })
         .catch(() => toast({ title: 'Update failed', variant: 'destructive' }));
     } else {
-      const newO: Offer = { ...(form as Omit<Offer, 'id'>), id: `OFF-${Date.now()}` };
-      offersApi.create(newO)
-        .then(o => { setOffers(prev => [o, ...prev]); toast({ title: 'Offer Created', description: `"${newO.name}" is now active.` }); })
+      offersApi.create(form as Offer)
+        .then(o => { setOffers(prev => [o, ...prev]); toast({ title: 'Offer Created', description: `"${form.name}" is now active.` }); })
         .catch(() => toast({ title: 'Create failed', variant: 'destructive' }));
     }
     setDialogOffer(undefined);
@@ -255,16 +255,16 @@ export default function AdminOffers() {
   const handleDelete = (id: string) => {
     if (!confirm('Delete this offer?')) return;
     offersApi.delete(id)
-      .then(() => { setOffers(prev => prev.filter(o => o.id !== id)); toast({ title: 'Offer Deleted' }); })
+      .then(() => { setOffers(prev => prev.filter(o => (o.offerId ?? o.id) !== id)); toast({ title: 'Offer Deleted' }); })
       .catch(() => toast({ title: 'Delete failed', variant: 'destructive' }));
   };
 
   const handleToggle = (id: string) => {
-    const offer = offers.find(o => o.id === id);
+    const offer = offers.find(o => (o.offerId ?? o.id) === id);
     if (!offer) return;
     const updated = { ...offer, active: !offer.active };
     offersApi.update(id, updated)
-      .then(o => setOffers(prev => prev.map(x => x.id === id ? o : x)))
+      .then(o => setOffers(prev => prev.map(x => (x.offerId ?? x.id) === id ? o : x)))
       .catch(() => {});
   };
 
@@ -336,7 +336,7 @@ export default function AdminOffers() {
               const live = isActive(offer);
               const expired = offer.endDate < today();
               return (
-                <div key={offer.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                <div key={offer.offerId ?? offer.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
                   {/* Accent bar */}
                   <div className="h-1.5" style={{
                     background: live
@@ -378,7 +378,7 @@ export default function AdminOffers() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <button onClick={() => handleToggle(offer.id)}
+                      <button onClick={() => handleToggle(offer.offerId ?? offer.id!)}
                         className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold border transition-all"
                         style={offer.active
                           ? { background: '#ECFDF5', color: '#059669', borderColor: '#059669' }
@@ -390,7 +390,7 @@ export default function AdminOffers() {
                         className="p-2 rounded-xl border border-gray-200 text-gray-500 hover:bg-purple-50 hover:text-purple-600 hover:border-purple-200 transition-all">
                         <Edit2 size={14} />
                       </button>
-                      <button onClick={() => handleDelete(offer.id)}
+                      <button onClick={() => handleDelete(offer.offerId ?? offer.id!)}
                         className="p-2 rounded-xl border border-gray-200 text-gray-500 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all">
                         <Trash2 size={14} />
                       </button>

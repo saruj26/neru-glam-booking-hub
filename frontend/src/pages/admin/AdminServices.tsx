@@ -46,7 +46,7 @@ const AdminServices = () => {
   const [isDialogOpen, setIsDialogOpen]   = useState(false);
 
   useEffect(() => {
-    if (localStorage.getItem('neru-admin-auth') !== 'true') { navigate('/admin'); return; }
+    if (!localStorage.getItem('neru-admin-auth')) { navigate('/admin'); return; }
     setServices(loadServices());
   }, [navigate]);
 

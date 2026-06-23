@@ -127,7 +127,7 @@ const AdminLogin = () => {
             <Sparkles size={16} className="text-amber-600 mt-0.5 flex-shrink-0" />
             <p className="text-xs text-amber-800 leading-relaxed">
               <span className="font-semibold">Demo credentials —</span>{' '}
-              Username: <code className="font-bold">admin</code> &nbsp;·&nbsp; Password: <code className="font-bold">admin123</code>
+              Username: <code className="font-bold">admin</code> &nbsp;·&nbsp; Password: <code className="font-bold">Neru@Admin2026</code>
             </p>
           </div>
 

@@ -223,7 +223,7 @@ export default function AdminServiceCategories() {
   const handleSave = (cat: ServiceCategory) => {
     const existing = cats.find(c => c.id === cat.id);
     if (existing) {
-      serviceCategoriesApi.update(cat.id, cat)
+      serviceCategoriesApi.update(cat.categoryId ?? cat.id, cat)
         .then(c => { setCats(prev => prev.map(x => x.id === cat.id ? c : x).sort((a, b) => a.order - b.order)); toast({ title: 'Category updated ✓' }); })
         .catch(() => toast({ title: 'Update failed', variant: 'destructive' }));
     } else {
@@ -237,7 +237,8 @@ export default function AdminServiceCategories() {
 
   const handleDelete = (id: string) => {
     if (!window.confirm('Delete this category?')) return;
-    serviceCategoriesApi.delete(id)
+    const cat = cats.find(c => c.id === id);
+    serviceCategoriesApi.delete(cat?.categoryId ?? id)
       .then(() => { setCats(prev => prev.filter(c => c.id !== id)); toast({ title: 'Category deleted' }); })
       .catch(() => toast({ title: 'Delete failed', variant: 'destructive' }));
   };
@@ -246,7 +247,7 @@ export default function AdminServiceCategories() {
     const cat = cats.find(c => c.id === id);
     if (!cat) return;
     const updated = { ...cat, [key]: !cat[key] };
-    serviceCategoriesApi.update(id, updated)
+    serviceCategoriesApi.update(cat.categoryId ?? id, updated)
       .then(c => setCats(prev => prev.map(x => x.id === id ? c : x)))
       .catch(() => {});
   };
